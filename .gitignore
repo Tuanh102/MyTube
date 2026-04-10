@@ -1,0 +1,12 @@
+# Lờ đi file cấu hình (để không bị lộ mật khẩu)
+.env
+
+# Lờ đi thư mục chứa thư viện (vì nó rất nặng, ai tải code về thì tự npm install sau)
+node_modules/
+
+# Lờ đi các file rác của hệ điều hành
+.DS_Store
+Thumbs.db
+
+# Lờ đi các thư mục log hoặc file tạm
+npm-debug.log*

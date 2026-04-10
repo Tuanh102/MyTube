@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MyTube</title>
+    <link rel="stylesheet" href="/assets/style/header.css">
+    <link rel="icon" type="image/png" href="/assets/img/logoMyTube.png">
+    <style>
+        .no-video {
+    grid-column: 1 / -1; /* Chiếm hết các cột của Grid */
+    text-align: center;
+    padding: 100px 0;
+    color: #606060;
+}
+
+.video-card img {
+    width: 100%;
+    border-radius: 12px;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    background: #f0f0f0;
+}
+
+.btn-upload {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #ff0000;
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+}
+    </style>
+</head>
+<body>
+    <%- include('../layout/header') %>
+
+    <main class="video-grid" id="main-content">
+    <% if (typeof videos !== 'undefined' && videos && videos.length > 0) { %>
+    <% videos.forEach(video => { %>
+        <div class="video-card">
+            </div>
+    <% }) %>
+<% } else { %>
+    <div class="no-video">
+        <p>Hiện chưa có video nào được đăng tải, Tuanh ơi! 📺</p>
+    </div>
+<% } %>
+</main>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+            mainContent.classList.toggle('expanded');
+        });
+    </script>
+</body>
+</html>
