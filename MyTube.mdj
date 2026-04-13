@@ -2467,7 +2467,7 @@
 											"top": 515.5,
 											"width": 96,
 											"height": 13,
-											"text": "Đăng kí Creator"
+											"text": "Tạo kênh"
 										},
 										{
 											"_type": "LabelView",
@@ -2500,7 +2500,7 @@
 									"font": "Arial;13;0",
 									"left": 894.5,
 									"top": 508.5,
-									"width": 106.8017578125,
+									"width": 106,
 									"height": 25,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGdcXufBlWhdqg="
@@ -3064,7 +3064,7 @@
 											"top": 507.5,
 											"width": 125,
 											"height": 13,
-											"text": "Duyệt video tự động"
+											"text": "Duyệt video"
 										},
 										{
 											"_type": "LabelView",
@@ -3097,7 +3097,7 @@
 									"font": "Arial;13;0",
 									"left": 388.5,
 									"top": 500.5,
-									"width": 136.41357421875,
+									"width": 135,
 									"height": 25,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGdcXx4pVYuPIo="
@@ -9189,6 +9189,100 @@
 							"propertyLabel": {
 								"$ref": "AAAAAAGdcq0LDBpOe/Y="
 							}
+						},
+						{
+							"_type": "UMLGeneralizationView",
+							"_id": "AAAAAAGdgg2UEX0raiA=",
+							"_parent": {
+								"$ref": "AAAAAAGdcWHXG1ML7Dg="
+							},
+							"model": {
+								"$ref": "AAAAAAGdgg2UEX0p78w="
+							},
+							"subViews": [
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AAAAAAGdgg2UEX0sHOM=",
+									"_parent": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"model": {
+										"$ref": "AAAAAAGdgg2UEX0p78w="
+									},
+									"visible": false,
+									"font": "Arial;13;0",
+									"left": 175,
+									"top": 396,
+									"height": 13,
+									"alpha": 1.5707963267948966,
+									"distance": 15,
+									"hostEdge": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"edgePosition": 1
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AAAAAAGdgg2UEn0tzhY=",
+									"_parent": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"model": {
+										"$ref": "AAAAAAGdgg2UEX0p78w="
+									},
+									"visible": null,
+									"font": "Arial;13;0",
+									"left": 160,
+									"top": 396,
+									"height": 13,
+									"alpha": 1.5707963267948966,
+									"distance": 30,
+									"hostEdge": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"edgePosition": 1
+								},
+								{
+									"_type": "EdgeLabelView",
+									"_id": "AAAAAAGdgg2UEn0upwo=",
+									"_parent": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"model": {
+										"$ref": "AAAAAAGdgg2UEX0p78w="
+									},
+									"visible": false,
+									"font": "Arial;13;0",
+									"left": 204,
+									"top": 397,
+									"height": 13,
+									"alpha": -1.5707963267948966,
+									"distance": 15,
+									"hostEdge": {
+										"$ref": "AAAAAAGdgg2UEX0raiA="
+									},
+									"edgePosition": 1
+								}
+							],
+							"font": "Arial;13;0",
+							"head": {
+								"$ref": "AAAAAAGdcWS/hlN0834="
+							},
+							"tail": {
+								"$ref": "AAAAAAGdcWmqilQjBsQ="
+							},
+							"lineStyle": 1,
+							"points": "188:479;192:328",
+							"showVisibility": true,
+							"nameLabel": {
+								"$ref": "AAAAAAGdgg2UEX0sHOM="
+							},
+							"stereotypeLabel": {
+								"$ref": "AAAAAAGdgg2UEn0tzhY="
+							},
+							"propertyLabel": {
+								"$ref": "AAAAAAGdgg2UEn0upwo="
+							}
 						}
 					]
 				},
@@ -9516,6 +9610,19 @@
 									"$ref": "AAAAAAGdcqcpA2yOaSM="
 								}
 							}
+						},
+						{
+							"_type": "UMLGeneralization",
+							"_id": "AAAAAAGdgg2UEX0p78w=",
+							"_parent": {
+								"$ref": "AAAAAAGdcWmqilQh1YA="
+							},
+							"source": {
+								"$ref": "AAAAAAGdcWmqilQh1YA="
+							},
+							"target": {
+								"$ref": "AAAAAAGdcWS/hlNyBPo="
+							}
 						}
 					]
 				},
@@ -9761,7 +9868,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGdcWHXGlMKp1c="
 					},
-					"name": "Đăng kí Creator"
+					"name": "Tạo kênh"
 				},
 				{
 					"_type": "UMLUseCase",
@@ -9800,7 +9907,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGdcWHXGlMKp1c="
 					},
-					"name": "Duyệt video tự động",
+					"name": "Duyệt video",
 					"ownedElements": [
 						{
 							"_type": "UMLInclude",

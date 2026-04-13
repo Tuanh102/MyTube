@@ -1,25 +1,71 @@
-<header class="header">
-    <div class="header-left">
-        <button id="menu-btn">☰</button>
-        <img src="/assets/img/logoMyTube.png" alt="Logo" class="logo">
-        <span class="brand-name">MyTube</span>
+<header class="main-header">
+
+    <div class="header-container">
+        <div id="menu-btn" class="icon-btn">
+            <i class="fa-solid fa-bars"></i>
+        </div>
+
+        <div class="logo">
+            <div class="logo-img"></div>
+            <h1>MyTube</h1>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" placeholder="Tìm kiếm">
+            <button class="search-btn">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+        </div>
+
+        <div class="icon-btn"><i class="fa-solid fa-bell"></i></div>
+        
+        <div class="user-auth-wrapper">
+    <div id="user-btn" class="icon-btn">
+        <i class="fa-solid fa-user"></i>
     </div>
-    <div class="header-center">
-        <input type="text" placeholder="Tìm kiếm">
-        <button>🔍</button>
+
+    <div id="auth-popup" class="auth-dropdown">
+        <div class="popup-arrow"></div>
+            <h3>Chào mừng bạn</h3>
+            <p>Đăng nhập để trải nghiệm thêm</p>
+            <div class="auth-buttons">
+                <a href="/login" class="btn-primary">Đăng nhập</a>
+                <a href="/register" class="btn-secondary">Đăng ký</a>
+            </div>
+            <hr>
+            <a href="/auth/google" class="btn-google">
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="G">
+                Tiếp tục với Google
+            </a>
+        </div>
     </div>
-    <div class="header-right">
-        <div class="user-icon">T</div>
+
     </div>
 </header>
 
-<nav class="sidebar" id="sidebar">
-    <ul>
-        <li>🏠 Trang chủ</li>
-        <li>🎬 Shorts</li>
-        <li>📺 Kênh đăng ký</li>
+<nav id="sidebar" class="side-nav">
+    <div class="nav-content">
+        <ul>
+            <li><a href="#"><i class="fa-solid fa-house"></i>Trang chủ</a></li>
+            <li><a href="#"><i class="fa-solid fa-film"></i>Shorts</a></li>
+        </ul>
         <hr>
-        <li>📚 Thư viện</li>
-        <li>🕒 Lịch sử</li>
-    </ul>
+        <ul>
+            <li><a href="#"><i class="fa-solid fa-user-plus"></i>Đăng ký</a></li>
+        </ul>
+        <hr>
+        <ul>
+            <li><a href="#"><i class="fa-solid fa-eye"></i>Đã xem</a></li>
+            <li><a href="#"><i class="fa-solid fa-heart"></i>Video đã thích</a></li>
+            <li><a href="#"><i class="fa-solid fa-clock"></i>Đã lưu</a></li>
+        </ul>
+        <hr>
+        <ul>
+            <li><a href="#"><i class="fa-solid fa-music"></i>Âm nhạc</a></li>
+            <li><a href="#"><i class="fa-solid fa-gamepad"></i>Trò chơi</a></li>
+            <li><a href="#"><i class="fa-solid fa-film"></i>Phim</a></li>
+            <li><a href="#"><i class="fa-solid fa-newspaper"></i>Tin tức</a></li>
+            <li><a href="#"><i class="fa-solid fa-lightbulb"></i>Học tập</a></li>
+        </ul>
+    </div>
 </nav>

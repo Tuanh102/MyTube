@@ -4,6 +4,9 @@
 # Lờ đi thư mục chứa thư viện (vì nó rất nặng, ai tải code về thì tự npm install sau)
 node_modules/
 
+# Lờ đi tất cả file JSON
+*.json
+
 # Lờ đi các file rác của hệ điều hành
 .DS_Store
 Thumbs.db

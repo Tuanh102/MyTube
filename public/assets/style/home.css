@@ -1,0 +1,42 @@
+:root {
+    --header-height: 70px; /* Chiều cao Header */
+    --sidebar-width: 240px; /* Chiều rộng Sidebar */
+    --header-bg-transparent: rgba(255, 255, 255, 0.6); /* Độ mờ của Header (trên mobile/khi scroll) */
+    --sidebar-bg-transparent: rgba(255, 255, 255, 0.4); /* Độ mờ của Sidebar */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* 1. CSS cho Ảnh nền Banner tràn viền */
+#hero-banner-container {
+    top: 0; left: 0;
+    width: 100%;
+    height: 100vh; /* Tràn ra toàn bộ chiều cao màn hình */
+    z-index: 0; /* Nằm dưới cùng */
+    overflow: hidden;
+    pointer-events: none; /* Cho phép click xuyên qua banner */
+}
+
+.hero-image {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Đảm bảo ảnh không bị bóp méo */
+    opacity: 0; /* Mặc định ẩn ảnh */
+    transition: opacity 0.8s ease-in-out; /* Hiệu ứng chuyển cảnh mượt mà */
+}
+
+.hero-image.active {
+    opacity: 1; /* Hiện ảnh active */
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2); /* Phủ một lớp màu đen mờ (20%) để Header dễ đọc hơn */
+    z-index: -1;
+}
+

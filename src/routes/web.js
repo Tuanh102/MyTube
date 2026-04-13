@@ -1,23 +1,12 @@
+// 1. Khai báo Express
 const express = require('express');
 const router = express.Router();
-const db = require('../config/database'); // Gọi file kết nối DB của Tuanh
 
-router.get('/', async (req, res) => {
-    try {
-        // Lấy tất cả video từ bảng 'videos' (Tuanh nhớ check tên bảng nhé)
-        const [videos] = await db.execute('SELECT * FROM videos ORDER BY createdAt DESC');
+// 2.Nạp Controller
+const homeController = require('../controllers/homeController');
 
-        res.render('page/home', { 
-            title: 'Trang chủ MyTube',
-            videos: videos // Truyền danh sách video vào View
-        });
-    } catch (error) {
-        console.error("Lỗi lấy video:", error);
-        res.render('page/home', { 
-            title: 'Trang chủ MyTube',
-            videos: [] // Nếu lỗi thì trả về mảng rỗng
-        });
-    }
-});
+// 3. Định nghĩa Route
+router.get('/', homeController.getHomePage);
 
+// 4. Xuất bản (Export)
 module.exports = router;
