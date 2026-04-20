@@ -1,11 +1,8 @@
-:root {
-    --header-height: 70px; /* Chiều cao Header */
-    --sidebar-width: 240px; /* Chiều rộng Sidebar */
-    --header-bg-transparent: rgba(255, 255, 255, 0.6); /* Độ mờ của Header (trên mobile/khi scroll) */
-    --sidebar-bg-transparent: rgba(255, 255, 255, 0.4); /* Độ mờ của Sidebar */
+* { 
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* 1. CSS cho Ảnh nền Banner tràn viền */
 #hero-banner-container {
@@ -40,3 +37,133 @@
     z-index: -1;
 }
 
+/*==========================================
+======NAV2==================================
+===========================================*/
+
+
+
+
+/*====================================
+= 2. CSS cho phần Video List =========================*/
+/* --- PHẦN TIẾP THEO --- */
+
+main {
+    position: relative;
+    z-index: 1; /* Nằm trên lớp banner */
+    padding: 20px 2%; /* Cách lề hai bên để không bị sát viền */
+    margin-top: 20px; /* Đẩy main lên trên banner một chút để tạo hiệu ứng lớp (tùy chỉnh) */
+}
+
+/* 2. Grid hệ thống: Tự động tính toán số cột dựa trên độ rộng màn hình */
+/* 2. Grid hệ thống: Nhỏ gọn và nằm bên trái */
+.video-grid {
+    display: grid;
+    /* Thay đổi 280px thành con số nhỏ hơn nếu bạn muốn card video nhỏ lại nữa */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+
+    /* Chỉ rộng tối đa 800px (hoặc tùy Tuanh chọn) để không chiếm hết chiều ngang */
+    max-width: 400px; 
+    
+    /* width: fit-content giúp nền ôm sát số lượng video */
+    width: fit-content; 
+
+    /* Bỏ margin: 0 auto để nó không ra giữa, cho margin-left nhỏ để cách lề trái tí thôi */
+    margin-left: 0px; 
+    margin-right: auto;
+
+    background: rgba(92, 224, 116, 0.4); 
+
+    gap: 20px 15px; /* Thu hẹp khoảng cách giữa các thẻ một chút */
+    padding: 15px;
+    border-radius: 15px;
+}
+
+/* 3. Style cho từng Card Video */
+.video-card {
+    background: transparent;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.video-card a {
+    text-decoration: none; /* Bỏ gạch chân link */
+    color: inherit;
+}
+
+.video-card:hover {
+    transform: scale(1.02); /* Phóng to nhẹ khi di chuột vào */
+}
+
+/* 4. Thumnail chuẩn 16:9 */
+.thumbnail-container {
+    width: 100%;
+    aspect-ratio: 16 / 9; /* Giữ tỷ lệ vàng của video, không bao giờ bị méo */
+    border-radius: 12px;
+    overflow: hidden;
+    background: #202020; /* Màu nền khi ảnh chưa kịp load */
+}
+
+.thumbnail-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 5. Nội dung thông tin video */
+.video-content {
+    display: flex;
+    margin-top: 0px;
+    gap: 12px;
+}
+
+.channel-avatar {
+    margin-top: 20px;
+    flex-shrink: 0; /* Không cho avatar bị bóp nhỏ */
+}
+
+.channel-avatar img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%; /* Avatar tròn */
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.video-text {
+    overflow: hidden; /* Cắt chữ nếu tiêu đề quá dài */
+}
+
+.video-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff !important; /* Chỉnh màu chữ trắng để nổi trên banner tối */
+    margin-bottom: 4px;
+    line-height: 1.4;
+    /* Hiển thị tối đa 2 dòng tiêu đề, quá 2 dòng sẽ có dấu ... */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.channel-name, .video-meta {
+    font-size: 13px;
+    color: #aaaaaa; /* Màu xám nhạt cho thông tin phụ */
+    margin: 0;
+}
+
+.channel-name:hover {
+    color: #fff;
+}
+
+/* Responsive cho màn hình nhỏ (Điện thoại) */
+@media (max-width: 600px) {
+    .video-grid {
+        grid-template-columns: 1fr; /* Màn hình nhỏ thì 1 cột duy nhất */
+    }
+    
+    main {
+        margin-top: 20px; /* Điện thoại thì không cần đẩy main lên banner */
+    }
+}

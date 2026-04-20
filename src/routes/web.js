@@ -1,12 +1,21 @@
-// 1. Khai báo Express
 const express = require('express');
 const router = express.Router();
+const videoController = require('../controllers/videoController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// 2.Nạp Controller
-const homeController = require('../controllers/homeController');
+// --- CÁC ROUTE CÔNG KHAI (Ai cũng xem được) ---
+router.get('/', videoController.getHomePage);
+router.get('/watch/:id', videoController.getWatchPage);
 
-// 3. Định nghĩa Route
-router.get('/', homeController.getHomePage);
+// --- CÁC ROUTE CẦN ĐĂNG NHẬP (Phải đi qua authMiddleware.isLoggedIn) ---
 
-// 4. Xuất bản (Export)
+// 1. Like video
+router.post('/api/videos/:id/like', authMiddleware.isLoggedIn, videoController.likeVideo);
+
+// 2. Bình luận
+router.post('/api/videos/:id/comments', authMiddleware.isLoggedIn, videoController.postComment);
+
+// 3. Theo dõi kênh
+router.post('/api/channels/follow', authMiddleware.isLoggedIn, videoController.toggleFollow);
+
 module.exports = router;

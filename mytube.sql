@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 10, 2026 at 12:59 PM
+-- Generation Time: Apr 17, 2026 at 11:06 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -47,6 +47,14 @@ CREATE TABLE `categories` (
   `category_name` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`category_id`, `category_name`) VALUES
+(1, 'Phim ngắn'),
+(2, 'Âm nhạc');
+
 -- --------------------------------------------------------
 
 --
@@ -60,6 +68,13 @@ CREATE TABLE `channels` (
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `channels`
+--
+
+INSERT INTO `channels` (`channel_id`, `user_id`, `channel_name`, `description`, `created_at`) VALUES
+(1, 1, 'Tuanh Channel Official', 'Kênh chuyên về công nghệ và lập trình của Tuanh1', '2026-04-12 14:50:20');
 
 -- --------------------------------------------------------
 
@@ -121,12 +136,26 @@ CREATE TABLE `subscriptions` (
 
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
+  `google_id` varchar(255) DEFAULT NULL,
   `username` varchar(50) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
+  `phone` varchar(15) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `avatar` text DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `role` enum('admin','creator','viewer') DEFAULT 'viewer',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `google_id`, `username`, `phone`, `email`, `avatar`, `password`, `role`, `created_at`) VALUES
+(1, NULL, 'Tuanh1', '0987654321', NULL, NULL, '0987654321', 'creator', '2026-04-12 14:50:19'),
+(2, NULL, 'Tuanh2', '0123456789', NULL, NULL, '0123456789', 'viewer', '2026-04-12 14:50:19'),
+(3, '118092499967505402511', 'Tuanh', NULL, 'ttattatta096@gmail.com', 'https://lh3.googleusercontent.com/a/ACg8ocK3INIrFzX4JT3jxFtZvN3508ZmwX6Nds_qiDiUiyiGYkrlH4Y=s96-c', NULL, 'viewer', '2026-04-15 18:10:01'),
+(23, NULL, 'Tuanh3', '1234567890', NULL, NULL, '1234567890', 'viewer', '2026-04-15 20:47:50'),
+(24, NULL, 'Tuanh4', '0999999999', NULL, NULL, '0999999999', 'viewer', '2026-04-15 20:49:48');
 
 -- --------------------------------------------------------
 
@@ -143,6 +172,14 @@ CREATE TABLE `user_profiles` (
   `birthday` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `user_profiles`
+--
+
+INSERT INTO `user_profiles` (`profile_id`, `user_id`, `full_name`, `avatar_url`, `bio`, `birthday`) VALUES
+(1, 1, 'Nguyễn Tuanh Một', '/assets/img/avatar-tuanh1.jpg', 'Xin chào, mình là creator!', NULL),
+(2, 2, 'Trần Tuanh Hai', '/assets/img/avatar-tuanh2.jpg', 'Mình chỉ đi xem video thôi.', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -156,10 +193,18 @@ CREATE TABLE `videos` (
   `title` varchar(255) NOT NULL,
   `video_url` varchar(255) NOT NULL,
   `thumbnail_url` varchar(255) DEFAULT NULL,
+  `describe` text NOT NULL,
   `status` enum('pending','active','blocked') DEFAULT 'pending',
   `view_count` int(11) DEFAULT 0,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `videos`
+--
+
+INSERT INTO `videos` (`video_id`, `channel_id`, `category_id`, `title`, `video_url`, `thumbnail_url`, `describe`, `status`, `view_count`, `uploaded_at`) VALUES
+(1, 1, 2, 'Ai đưa em về nhà remix', 'aiduaemve.mp4', 'aiduaemve.png', 'Hashtag: ai đưa em về,ai dua em ve,ai đưa em về remix,ai dua em ve remix,take me back back home remix,tiktok,ADEV,ai đưa em về lê thiện hiếu,le thien hieu ai dua em ve,ai đưa em về low cortisol,Low Cortisol Song,ai dua em ve low cortisol,ai đưa em về low cortisol song,ai dua em ve low cortisol song,low cortisol song,ai dua em ve remix tiktok,remix,nhạc remix,nhạc tiktok,vunhann,ai đưa em về tiktok,ai đưa em về nhảy,remix ai đưa em về', 'pending', 0, '2026-04-12 14:53:34');
 
 -- --------------------------------------------------------
 
@@ -233,7 +278,12 @@ ALTER TABLE `subscriptions`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`phone`),
+  ADD UNIQUE KEY `phone` (`phone`),
+  ADD UNIQUE KEY `google_id` (`google_id`),
+  ADD UNIQUE KEY `email_2` (`email`),
+  ADD UNIQUE KEY `phone_2` (`phone`),
+  ADD UNIQUE KEY `phone_3` (`phone`);
 
 --
 -- Indexes for table `user_profiles`
@@ -272,13 +322,13 @@ ALTER TABLE `ai_scan_logs`
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `channels`
 --
 ALTER TABLE `channels`
-  MODIFY `channel_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `channel_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `comments`
@@ -296,19 +346,19 @@ ALTER TABLE `playlists`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`
 --
 ALTER TABLE `user_profiles`
-  MODIFY `profile_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `profile_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `videos`
 --
 ALTER TABLE `videos`
-  MODIFY `video_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `video_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `watch_history`

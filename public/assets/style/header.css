@@ -1,10 +1,8 @@
-/* layout-bilibili.css */
 :root {
     --header-height: 64px;
     --sidebar-width: 240px;
-    /* Màu trắng mờ kiểu kính */
-    --glass-bg: rgba(255, 255, 255, 0.2); 
-    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-bg: rgba(0, 0, 0, 0.7); 
+    --glass-border: rgba(0, 0, 0, 0.7);
 }
 
 /* Header mờ đè lên Banner */
@@ -38,17 +36,18 @@
     left: 0;
     width: var(--sidebar-width);
     height: calc(100vh - var(--header-height));
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(15px);
     border-right: 1px solid var(--glass-border);
     z-index: 999;
     transition: transform 0.3s ease;
     overflow-y: auto;
+    transform: translateX(-100%);/* Trạng thái ẩn của Sidebar */
 }
 
-/* Trạng thái ẩn của Sidebar */
-.side-nav.hide {
-    transform: translateX(-100%);
+/* Trạng thái hiện của Sidebar */
+.side-nav.show {
+    transform: translateX(0%);
 }
 
 /* PHẦN QUAN TRỌNG: Main phải nằm dưới Banner */
@@ -92,7 +91,23 @@ main.full-width {
 }
 
 
-.icon-btn { color: #fff; cursor: pointer; padding: 10px; font-size: 20px; }
+.icon-btn {
+    color: #fff;
+    cursor: pointer;
+    padding: 10px;
+    font-size: 20px; }
+
+.icon-btn a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.icon-btn
+:hover {
+    color: #ff4d4f;
+    transform: scale(1.1);
+    transition: all 0.3s ease;
+}
 
 
 .search-box {
@@ -172,36 +187,33 @@ main.full-width {
 /* -----------------------------------------------------
 ---------------------- Auth Dropdown ------------------ 
 ------------------------------------------------------*/
-
 .auth-dropdown {
     position: absolute;
-    top: 60px; /* chỉnh theo header */
+    top: 60px;
     right: 20px;
 
     width: 260px;
     padding: 15px;
 
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-bg);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
 
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.3);
-
     box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 
     color: #fff;
     z-index: 2000;
 
-    display: none; /* ẩn mặc định */
+    display: none;
 }
 
-/* Hiển thị */
 .auth-dropdown.show {
     display: block;
 }
 
-/* Mũi tên */
+/* ===== POPUP ARROW ===== */
 .popup-arrow {
     position: absolute;
     top: -8px;
@@ -209,14 +221,15 @@ main.full-width {
 
     width: 16px;
     height: 16px;
-    background: rgba(255,255,255,0.2);
 
+    background: rgba(255,255,255,0.2);
     transform: rotate(45deg);
+
     border-left: 1px solid rgba(255,255,255,0.3);
     border-top: 1px solid rgba(255,255,255,0.3);
 }
 
-/* Text */
+/* ===== TEXT ===== */
 .auth-dropdown h3 {
     font-size: 16px;
     margin-bottom: 5px;
@@ -228,44 +241,81 @@ main.full-width {
     margin-bottom: 10px;
 }
 
-/* Buttons */
-.auth-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.auth-buttons a {
-    flex: 1;
-    text-align: center;
-    padding: 8px;
-    border-radius: 8px;
-    text-decoration: none;
+/* ===== USER MENU ===== */
+.user-menu-list li a {
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     transition: 0.3s;
 }
 
-/* Đăng nhập */
-.btn-primary {
-    background: #ff4d4f;
+.user-menu-list li a:hover {
+    color: #ff4d4f !important;
+    padding-left: 5px;
+}
+
+/* ===== FORM ===== */
+.auth-form input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+
+    border-radius: 6px;
+    border: 1px solid #444;
+
+    background: #2a2a2a;
     color: #fff;
+
+    box-sizing: border-box;
 }
 
-.btn-primary:hover {
-    background: #ff7875;
+.btn-primary-form {
+    width: 100%;
+    padding: 10px;
+
+    background: #cc0000;
+    color: white;
+
+    border: none;
+    border-radius: 6px;
+
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 5px;
 }
 
-/* Đăng ký */
-.btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: #fff;
+/* ===== TOGGLE TEXT ===== */
+.toggle-text {
+    font-size: 12px;
+    text-align: center;
+    margin-top: 10px;
+    color: #aaa;
 }
 
-.btn-secondary:hover {
-    background: rgba(255,255,255,0.4);
+.toggle-text span {
+    color: #3ea6ff;
+    cursor: pointer;
 }
 
-/* Google */
+/* ===== DIVIDER ===== */
+.divider {
+    text-align: center;
+    margin: 15px 0;
+
+    border-bottom: 1px solid #333;
+    line-height: 0.1em;
+}
+
+.divider span {
+    background: #1f1f1f;
+    padding: 0 10px;
+
+    color: #666;
+    font-size: 11px;
+}
+
+/* ===== GOOGLE BUTTON ===== */
 .btn-google {
     display: flex;
     align-items: center;
@@ -292,9 +342,24 @@ main.full-width {
     background: #f1f1f1;
 }
 
-/* HR */
+/* ===== HR ===== */
 .auth-dropdown hr {
     border: none;
     border-top: 1px solid rgba(255,255,255,0.3);
     margin: 10px 0;
+}
+
+
+/*======================================
+============FOOTER======================
+=======================================*/
+footer {
+    color: #ffffff;
+    padding: 10px 10px;
+    font-size: 13px;
+    border-top: 1px solid #222;
+}
+
+footer p {
+    margin: 5px 0;
 }
