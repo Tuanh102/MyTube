@@ -1,15 +1,36 @@
-# Lờ đi file cấu hình (để không bị lộ mật khẩu)
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
 .env
 
-# Lờ đi thư mục chứa thư viện (vì nó rất nặng, ai tải code về thì tự npm install sau)
-node_modules/
+# vercel
+.vercel
 
-# Lờ đi tất cả file JSON
-*.json
+# typescript
+*.tsbuildinfo
 
-# Lờ đi các file rác của hệ điều hành
-.DS_Store
-Thumbs.db
-
-# Lờ đi các thư mục log hoặc file tạm
-npm-debug.log*
+# workspace/temp directories
+/scratch/
+/word/
+/base64.txt

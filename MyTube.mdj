@@ -10054,6 +10054,158 @@
 						"$ref": "AAAAAAGdcWHXGlMKp1c="
 					},
 					"name": "Lưu video"
+				},
+				{
+					"_type": "UMLCollaboration",
+					"_id": "AAAAAAGR+1aB3X8A",
+					"_parent": {
+						"$ref": "AAAAAAGdcWHXGlMKp1c="
+					},
+					"name": "AuthCollaboration",
+					"ownedElements": [
+						{
+							"_type": "UMLInteraction",
+							"_id": "AAAAAAGR+1aB3X8B",
+							"_parent": {
+								"$ref": "AAAAAAGR+1aB3X8A"
+							},
+							"name": "LoginSequence",
+							"participants": [
+								{
+									"_type": "UMLLifeline",
+									"_id": "AAAAAAGR+1bNnX8P",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "User",
+									"represent": {
+										"$ref": "AAAAAAGR+1bNnX8O"
+									}
+								},
+								{
+									"_type": "UMLLifeline",
+									"_id": "AAAAAAGR+1bq0X8u",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "Client",
+									"represent": {
+										"$ref": "AAAAAAGR+1bq0X8t"
+									}
+								},
+								{
+									"_type": "UMLLifeline",
+									"_id": "AAAAAAGR+1cInX9I",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "NextAuth",
+									"represent": {
+										"$ref": "AAAAAAGR+1cInX9H"
+									}
+								},
+								{
+									"_type": "UMLLifeline",
+									"_id": "AAAAAAGR+1ckqX9n",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "Database",
+									"represent": {
+										"$ref": "AAAAAAGR+1ckqX9m"
+									}
+								}
+							],
+							"messages": [
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAGR+1du0X+D",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "Nhập SĐT & Mật khẩu",
+									"source": {
+										"$ref": "AAAAAAGR+1bNnX8P"
+									},
+									"target": {
+										"$ref": "AAAAAAGR+1bq0X8u"
+									}
+								},
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAGR+1eNXH+Z",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "signIn('credentials')",
+									"source": {
+										"$ref": "AAAAAAGR+1bq0X8u"
+									},
+									"target": {
+										"$ref": "AAAAAAGR+1cInX9I"
+									}
+								},
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAGR+1ephX+u",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "userModel.findByPhoneAndPassword()",
+									"source": {
+										"$ref": "AAAAAAGR+1cInX9I"
+									},
+									"target": {
+										"$ref": "AAAAAAGR+1ckqX9n"
+									}
+								},
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAGR+1fx0X+v",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "Trả về thông tin User",
+									"messageSort": "reply",
+									"source": {
+										"$ref": "AAAAAAGR+1ckqX9n"
+									},
+									"target": {
+										"$ref": "AAAAAAGR+1cInX9I"
+									}
+								},
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAGR+1gy0X+w",
+									"_parent": {
+										"$ref": "AAAAAAGR+1aB3X8B"
+									},
+									"name": "Thành công / Chuyển hướng",
+									"messageSort": "reply",
+									"source": {
+										"$ref": "AAAAAAGR+1cInX9I"
+									},
+									"target": {
+										"$ref": "AAAAAAGR+1bq0X8u"
+									}
+								}
+							]
+						},
+						{
+							"_type": "UMLSequenceDiagram",
+							"_id": "AAAAAAGR+1hz0X+x",
+							"_parent": {
+								"$ref": "AAAAAAGR+1aB3X8B"
+							},
+							"name": "Login Sequence Diagram"
+						}
+					],
+					"attributes": [
+						{ "_type": "UMLAttribute", "_id": "AAAAAAGR+1bNnX8O", "name": "Role1" },
+						{ "_type": "UMLAttribute", "_id": "AAAAAAGR+1bq0X8t", "name": "Role2" },
+						{ "_type": "UMLAttribute", "_id": "AAAAAAGR+1cInX9H", "name": "Role3" },
+						{ "_type": "UMLAttribute", "_id": "AAAAAAGR+1ckqX9m", "name": "Role4" }
+					]
 				}
 			]
 		}

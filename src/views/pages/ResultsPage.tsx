@@ -1,0 +1,119 @@
+"use client";
+
+import React, { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { formatDuration } from '@/lib/utils';
+import { useUI } from '@/context/UIContext';
+
+interface ResultsPageProps {
+  videos: any[];
+  query: string;
+}
+
+export default function ResultsPage({ videos, query }: ResultsPageProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="max-w-[1000px] mx-auto py-6 px-4">
+      <h2 className="text-white text-lg font-medium mb-6">
+        Kết quả tìm kiếm cho: <span className="font-bold text-red-500">"{query}"</span>
+      </h2>
+
+      <div className="flex flex-col gap-4">
+        {videos.length > 0 ? videos.map((video) => (
+          <VideoResultCard key={video.video_id} video={video} />
+        )) : (
+          <div className="text-white/40 text-center py-20">
+            <p className="text-xl font-bold mb-2">Không tìm thấy kết quả nào</p>
+            <p>Hãy thử tìm kiếm với từ khóa khác</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VideoResultCard({ video }: { video: any }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal');
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div 
+      ref={cardRef}
+      className="group relative flex flex-col sm:flex-row gap-4 p-3 rounded-2xl transition-all duration-500 hover:bg-white/5 hover:scale-[1.02] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer video-result-card"
+    >
+      {/* Thumbnail */}
+      <Link href={`/watch/${video.video_id}`} className="relative w-full sm:w-[360px] aspect-video rounded-xl overflow-hidden flex-shrink-0">
+        <img 
+          src={video.thumbnail_url?.startsWith('http') ? video.thumbnail_url : (video.thumbnail_url ? `/uploads/${video.thumbnail_url}` : '/assets/img/default-thumb.jpg')} 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          alt={video.title}
+        />
+        <div className="absolute bottom-2 right-2 bg-black/80 px-1.5 py-0.5 rounded text-xs font-bold text-white">
+          {formatDuration(video.duration || 0)}
+        </div>
+      </Link>
+
+      {/* Info */}
+      <div className="flex-1 flex flex-col gap-2 py-1">
+        <Link href={`/watch/${video.video_id}`}>
+          <h3 className="text-white text-lg font-bold line-clamp-2 group-hover:text-red-500 transition-colors duration-300">
+            {video.title}
+          </h3>
+        </Link>
+        
+        <div className="flex items-center gap-2 text-xs text-white/40">
+          <span>{video.view_count?.toLocaleString('vi-VN')} lượt xem</span>
+          <span>•</span>
+          <span>{new Date(video.uploaded_at).toLocaleDateString('vi-VN')}</span>
+        </div>
+
+        <div className="flex items-center gap-2 my-2">
+          <div className="w-6 h-6 rounded-full overflow-hidden bg-white/5">
+            <img 
+              src={video.channel_avatar ? (
+                video.channel_avatar.startsWith('/') || video.channel_avatar.startsWith('http') 
+                ? video.channel_avatar 
+                : `/uploads/${video.channel_avatar}`
+              ) : '/assets/img/avata.jpg'} 
+              className="w-full h-full object-cover" 
+              alt={video.channel_name} 
+            />
+          </div>
+          <span className="text-sm text-white/60 hover:text-white transition-colors">{video.channel_name}</span>
+        </div>
+
+        <p className="text-sm text-white/40 line-clamp-2 leading-relaxed">
+          {video.description || 'Không có mô tả cho video này.'}
+        </p>
+      </div>
+
+      <style jsx>{`
+        .video-result-card {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .video-result-card.reveal {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
+    </div>
+  );
+}
