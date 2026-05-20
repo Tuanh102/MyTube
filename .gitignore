@@ -1,36 +1,67 @@
-# dependencies
+# ==========================================
+# MYTUBE - MASTER GITIGNORE CONFIGURATION
+# ==========================================
+
+# --- SYSTEM & OS FILES ---
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.pem
+*.key
+
+# --- NODE.JS & DEPENDENCIES ---
+node_modules/
 /node_modules
-/.pnp
+client/node_modules/
+server/node_modules/
+package-lock.json
+client/package-lock.json
+server/package-lock.json
+.pnp
 .pnp.js
+*.tsbuildinfo
 
-# testing
-/coverage
+# --- ENVIRONMENT VARIABLES (SECURITY FIRST) ---
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+client/.env
+server/.env
 
-# next.js
-/.next/
-/out/
+# --- BUILD OUTPUTS ---
+# NestJS Server Build
+server/dist/
+/dist
+
+# Next.js Client Build
+client/.next/
+client/out/
 /build
 
-# misc
-.DS_Store
-*.pem
-
-# debug
+# --- TESTING & COVERAGE ---
+coverage/
+*.lcov
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
-.env*.local
-.env
+# --- IDEs & EDITORS ---
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-
-# workspace/temp directories
+# --- TEMPORARY / SCRATCH FILES ---
 /scratch/
 /word/
 /base64.txt
+test/*.log
