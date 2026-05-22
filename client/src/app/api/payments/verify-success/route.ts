@@ -4,13 +4,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
         const body = await req.json();
-        const { userId, videoId, orderId } = body;
+        const { videoId, orderId } = body;
+        const userId = user.id; // Securely enforce userId from server session
 
         // Gọi sang Server NestJS (127.0.0.1:5000)
         const res = await fetch(`http://127.0.0.1:5000/payments/verify-success`, {

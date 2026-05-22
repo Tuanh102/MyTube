@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
-import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, ChevronDown, ChevronUp, MessageSquare, X, Play, Pause, ShieldCheck } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, ChevronDown, ChevronUp, MessageSquare, X, Play, Pause, ShieldCheck, Flag, AlertTriangle, Trash2 } from 'lucide-react';
 import VideoCard from '@/views/components/VideoCard';
 import Link from 'next/link';
 import { formatDuration, getUploadUrl } from '@/lib/utils';
-import { toggleCommentInteraction, submitCommentAction, toggleLike, toggleDislike, toggleFollow, getUserPlaylistsAction, createPlaylistAction, toggleVideoInPlaylistAction, getWatchHistoryAction, addToHistoryAction, incrementViewCountAction } from '@/lib/actions';
+import { toggleCommentInteraction, submitCommentAction, toggleLike, toggleDislike, toggleFollow, getUserPlaylistsAction, createPlaylistAction, toggleVideoInPlaylistAction, getWatchHistoryAction, addToHistoryAction, incrementViewCountAction, submitVideoReportAction } from '@/lib/actions';
 import { useUI } from '@/context/UIContext';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -53,8 +53,8 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   const isPurchased = useMemo(() => {
     if (!video) return false;
     
-    // 1. Kiểm tra video miễn phí (chỉ free khi không có giá tiền hoặc giá tiền bằng 0)
-    const isFree = !video.price || video.price === 0;
+    // 1. Kiểm tra video miễn phí (chỉ free khi không có giá tiền hoặc giá tiền bằng 0 và is_free không phải là false)
+    const isFree = video.is_free !== false && (!video.price || video.price === 0);
     if (isFree) return true;
 
     // 2. Kiểm tra chủ sở hữu (phải đăng nhập trước, tức là user.id có giá trị thực sự)
@@ -69,8 +69,17 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     const purchasedVideos = currentUserData?.purchased_videos || user?.purchased_videos || [];
     const purchased = purchasedVideos.some((id: any) => id.toString() === (video._id || video.video_id).toString());
     
-    return !!purchased;
   }, [video, user, currentUserData]);
+
+  const isOwner = useMemo(() => {
+    if (!video || !user?.id) return false;
+    return (
+      user.id.toString() === video.channel_user_id?.toString() || 
+      user.id.toString() === video.user_id?.toString() ||
+      user.id.toString() === video.channel?.user?.toString() ||
+      user.id.toString() === video.channel?.user_id?.toString()
+    );
+  }, [video, user]);
 
   const [isBuying, setIsBuying] = useState(false);
 
@@ -119,9 +128,64 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   const [draftPlaylists, setDraftPlaylists] = useState<string[]>([]);
   const [isSavingPlaylists, setIsSavingPlaylists] = useState(false);
   
+  // States and refs for reporting video
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('Spam hoặc gây hiểu lầm');
+  const [customReportReason, setCustomReportReason] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Close 3-dot dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
+  // Toast automatic dismissal
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ensureUserLoggedIn('Báo cáo video')) return;
+    
+    setIsSubmittingReport(true);
+    const finalReason = reportReason === 'Lý do khác' && customReportReason.trim()
+      ? `Lý do khác: ${customReportReason.trim()}`
+      : reportReason;
+      
+    try {
+      const res = await submitVideoReportAction((video._id || video.video_id).toString(), user.id.toString(), finalReason);
+      if (res && (res._id || res.success !== false)) {
+        setToast({ message: 'Gửi báo cáo thành công! Cảm ơn bạn đã đóng góp giúp cộng đồng lành mạnh.', type: 'success' });
+        setIsReportModalOpen(false);
+        setCustomReportReason('');
+      } else {
+        setToast({ message: res.message || 'Lỗi gửi báo cáo. Vui lòng thử lại sau!', type: 'error' });
+      }
+    } catch (err) {
+      setToast({ message: 'Lỗi kết nối server.', type: 'error' });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
 
   // --- HỆ THỐNG QUẢNG CÁO PRE-ROLL XANH SM ---
   // Xác định xem có phải đang quay lại video từ Mini Player hay không NGAY trong pha render đầu tiên
@@ -199,6 +263,12 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       setShowAd(false);
     }
   }, [video._id, video.video_id, isReturningFromMiniplayer, currentUserData?.is_premium, user?.is_premium]);
+
+  // Reset viewCountedRef and localComments when switching videos
+  useEffect(() => {
+    viewCountedRef.current = false;
+    setLocalComments(comments);
+  }, [video?._id, video?.video_id, comments]);
 
   // Bộ đếm ngược tích hợp: Đếm 5s hiển thị nút Skip & Đếm 30s tự động chuyển tiếp (Đóng băng khi isAdPaused = true)
   useEffect(() => {
@@ -321,7 +391,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   const handleToggleFollow = async () => {
     if (!ensureUserLoggedIn('Theo dõi kênh')) return;
 
-    const res = await toggleFollow(video.channel_id, Number(user.id));
+    const res = await toggleFollow(video.channel_id, user.id.toString());
     if (res.success) {
       setIsFollowed(res.isFollowed);
       setSubCount(prev => res.isFollowed ? prev + 1 : prev - 1);
@@ -420,6 +490,11 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   const handleEnded = () => {
     // Only count 1 view per session, so we DO NOT setViewCounted(false) here.
     // If the user re-watches, it won't count again until they reload the page.
+    if (!viewCountedRef.current && video) {
+      viewCountedRef.current = true;
+      incrementViewCountAction((video._id || video.video_id).toString())
+        .catch(err => console.error('Error counting view on end:', err));
+    }
     setIsPlaying(false);
   };
 
@@ -475,6 +550,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
           comment_id: res.comment?._id || res.comment?.id || Date.now().toString(),
           username: user.name || user.username || 'You',
           avatar: user.image || '/assets/img/avata.jpg',
+          is_premium: currentUserData?.is_premium || user?.is_premium || false,
           content: commentContent,
           created_at: new Date().toISOString(),
           likes_count: 0,
@@ -600,7 +676,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   };
 
   const checkHasPermission = (v: any) => {
-    const isFree = !v.price || v.price === 0;
+    const isFree = v.is_free !== false && (!v.price || v.price === 0);
     if (isFree) return true;
 
     const purchasedVideos = currentUserData?.purchased_videos || user?.purchased_videos || [];
@@ -783,7 +859,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
             </button>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 flex-wrap py-1 overflow-visible">
             <div className="flex items-center bg-white/10 rounded-full overflow-hidden">
               <button 
                 onClick={handleToggleLike}
@@ -814,9 +890,44 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
               <span>Chia sẻ</span>
             </button>
             
-            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition">
-              <MoreHorizontal size={18} />
-            </button>
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition active:scale-95"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl py-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {isOwner ? (
+                    <Link
+                      href={`/studio?tab=videos&search=${encodeURIComponent(video.title)}`}
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-white/5 hover:text-red-400 flex items-center gap-2 transition font-medium"
+                    >
+                      <Trash2 size={16} />
+                      <span>Xóa video</span>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        if (ensureUserLoggedIn('Báo cáo video')) {
+                          setIsReportModalOpen(true);
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/5 hover:text-red-300 flex items-center gap-2 transition font-medium"
+                    >
+                      <Flag size={16} />
+                      <span>Báo cáo video</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -899,21 +1010,47 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
             {threadedComments.length > 0 ? threadedComments.map((comment) => (
               <div key={comment.comment_id} className="group">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-white/5">
+                  <div className={`w-10 h-10 rounded-full flex-shrink-0 bg-white/5 relative ${
+                    comment.is_premium 
+                      ? 'p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-yellow-600 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
+                      : 'overflow-hidden'
+                  }`}>
                     <img 
                       src={getUploadUrl(comment.avatar, '/assets/img/avata.jpg')} 
-                      className={`w-full h-full object-cover ${comment.is_channel ? 'ring-2 ring-red-500/50' : ''}`} 
+                      className={`w-full h-full object-cover rounded-full ${
+                        comment.is_premium 
+                          ? 'border border-zinc-900' 
+                          : comment.is_channel 
+                            ? 'ring-2 ring-red-500/50' 
+                            : ''
+                      }`} 
                       alt="" 
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/assets/img/avata.jpg';
                       }}
                     />
+                    {comment.is_premium && (
+                      <span className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-amber-500 to-yellow-500 text-zinc-950 text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-black shadow border border-zinc-900 select-none">
+                        ★
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-sm font-bold flex items-center gap-1 ${comment.is_channel ? 'text-red-500' : 'text-white'}`}>
+                      <span className={`text-sm font-bold flex items-center gap-1 ${
+                        comment.is_premium 
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent drop-shadow-sm font-black' 
+                          : comment.is_channel 
+                            ? 'text-red-500' 
+                            : 'text-white'
+                      }`}>
                         @{comment.username}
-                        {comment.is_channel && <ShieldCheck size={14} />}
+                        {comment.is_channel && <ShieldCheck size={14} className="text-red-500" />}
+                        {comment.is_premium && (
+                          <span className="ml-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-950 shadow-[0_0_6px_rgba(245,158,11,0.3)] select-none">
+                            ★ PREMIUM
+                          </span>
+                        )}
                       </span>
                       <span className="text-xs text-white/40">{new Date(comment.created_at).toLocaleDateString('vi-VN')}</span>
                     </div>
@@ -962,18 +1099,47 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                             <div className="mt-4 space-y-4 ml-2 border-l-2 border-white/10 pl-4 mb-4">
                               {comment.replies.map((reply: any) => (
                                 <div key={reply.comment_id} className="flex gap-3">
-                                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-white/5">
+                                  <div className={`w-8 h-8 rounded-full flex-shrink-0 bg-white/5 relative ${
+                                    reply.is_premium 
+                                      ? 'p-[1.5px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-yellow-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]' 
+                                      : 'overflow-hidden'
+                                  }`}>
                                     <img 
                                       src={getUploadUrl(reply.avatar, '/assets/img/avata.jpg')} 
-                                      className={`w-full h-full object-cover ${reply.is_channel ? 'ring-1 ring-red-500/30' : ''}`} 
+                                      className={`w-full h-full object-cover rounded-full ${
+                                        reply.is_premium 
+                                          ? 'border border-zinc-900' 
+                                          : reply.is_channel 
+                                            ? 'ring-1 ring-red-500/30' 
+                                            : ''
+                                      }`} 
                                       alt=""
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/assets/img/avata.jpg';
+                                      }}
                                     />
+                                    {reply.is_premium && (
+                                      <span className="absolute -bottom-0.5 -right-0.5 bg-gradient-to-tr from-amber-500 to-yellow-500 text-zinc-950 text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-black shadow border border-zinc-900 select-none">
+                                        ★
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                      <span className={`text-xs font-bold flex items-center gap-1 ${reply.is_channel ? 'text-red-500' : 'text-white'}`}>
+                                      <span className={`text-xs font-bold flex items-center gap-1 ${
+                                        reply.is_premium 
+                                          ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent drop-shadow-sm font-black' 
+                                          : reply.is_channel 
+                                            ? 'text-red-500' 
+                                            : 'text-white'
+                                      }`}>
                                         @{reply.username}
-                                        {reply.is_channel && <ShieldCheck size={12} />}
+                                        {reply.is_channel && <ShieldCheck size={12} className="text-red-500" />}
+                                        {reply.is_premium && (
+                                          <span className="ml-1 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-950 shadow-[0_0_5px_rgba(245,158,11,0.3)] select-none">
+                                            ★ PREMIUM
+                                          </span>
+                                        )}
                                       </span>
                                       <span className="text-[10px] text-white/40">{new Date(reply.created_at).toLocaleDateString('vi-VN')}</span>
                                     </div>
@@ -1255,6 +1421,111 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Glassmorphic Report Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6 relative">
+            <button 
+              onClick={() => setIsReportModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-500">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Báo cáo vi phạm</h3>
+                <p className="text-xs text-white/50">Chúng tôi sẽ xem xét báo cáo này trong vòng 24 giờ.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleReportSubmit} className="space-y-4">
+              <div className="space-y-2.5">
+                <label className="text-xs font-semibold text-white/60 block">Chọn lý do báo cáo:</label>
+                {[
+                  'Spam hoặc gây hiểu lầm',
+                  'Nội dung khiêu dâm',
+                  'Nội dung bạo lực hoặc phản cảm',
+                  'Quấy rối hoặc bắt nạt',
+                  'Vi phạm bản quyền',
+                  'Lý do khác'
+                ].map((reason) => (
+                  <label 
+                    key={reason}
+                    className={`flex items-center justify-between p-3.5 rounded-2xl border cursor-pointer transition ${
+                      reportReason === reason 
+                        ? 'bg-red-500/10 border-red-500/30 text-white' 
+                        : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{reason}</span>
+                    <input 
+                      type="radio" 
+                      name="reportReason" 
+                      value={reason}
+                      checked={reportReason === reason}
+                      onChange={() => setReportReason(reason)}
+                      className="accent-red-500 w-4 h-4 cursor-pointer"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              {reportReason === 'Lý do khác' && (
+                <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+                  <label className="text-xs font-semibold text-white/60 block">Mô tả lý do chi tiết:</label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Mô tả lý do bạn báo cáo video này..."
+                    value={customReportReason}
+                    onChange={(e) => setCustomReportReason(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-white text-sm outline-none focus:border-red-500/40 transition resize-none"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button 
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-6 py-2.5 rounded-full text-sm font-bold text-white hover:bg-white/10 transition"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmittingReport}
+                  className="px-6 py-2.5 rounded-full text-sm font-bold bg-gradient-to-r from-red-600 to-rose-600 text-white hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-red-600/20"
+                >
+                  {isSubmittingReport ? 'Đang gửi...' : 'Gửi báo cáo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Micro Floating Toast Alert */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[100] max-w-sm bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            toast.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+          }`}>
+            {toast.type === 'success' ? <ShieldCheck size={18} /> : <AlertTriangle size={18} />}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {toast.type === 'success' ? 'Thông báo' : 'Có lỗi xảy ra'}
+            </p>
+            <p className="text-xs text-white/70 mt-0.5 leading-relaxed">{toast.message}</p>
           </div>
         </div>
       )}

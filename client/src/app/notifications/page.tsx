@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
+import { getNotificationsAction } from "@/lib/actions";
 
 export const metadata: Metadata = {
   title: "Thông báo - MyTube",
@@ -14,15 +15,16 @@ export default async function Page({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const session = await getServerSession(authOptions);
+  const user = session?.user as any;
   
-  if (!session?.user?.id) {
+  if (!user?.id) {
     redirect('/login');
   }
 
   const { filter: filterParam } = await searchParams;
   const filter = filterParam || 'all';
-  const notifications = [] as any[];
+  const notifications = await getNotificationsAction(user.id, filter);
 
-  return <NotificationsPage notifications={notifications} filter={filter} />;
+  return <NotificationsPage notifications={notifications || []} filter={filter} />;
 }
 

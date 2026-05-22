@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     const channelId = searchParams.get('channelId');
 
     try {
-        const res = await fetch(`http://localhost:5000/videos/studio/overview?userId=${session.user.id}&channelId=${channelId || 'all'}`);
+        const res = await fetch(`http://127.0.0.1:5000/videos/studio/overview?userId=${user.id}&channelId=${channelId || 'all'}`);
         const data = await res.json();
         return NextResponse.json(data);
     } catch (err: any) {

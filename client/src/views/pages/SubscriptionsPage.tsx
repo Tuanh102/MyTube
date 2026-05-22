@@ -8,6 +8,7 @@ interface Channel {
   channel_id: number;
   channel_name: string;
   avatar: string;
+  sub_count?: number;
 }
 
 interface SubscriptionsPageProps {

@@ -13,7 +13,26 @@ export const formatDuration = (seconds: number) => {
 export const getUploadUrl = (path?: string, defaultPath: string = '/assets/img/default-thumb.jpg') => {
   if (!path) return defaultPath;
   if (path.startsWith('http')) return path;
-  if (path.startsWith('/')) return path;
-  return `/uploads/${path}`;
+  
+  // Clean double slashes
+  let cleanPath = path.replace(/\/+/g, '/');
+  
+  // Check if it already has the leading slash
+  if (cleanPath.startsWith('/')) {
+    if (cleanPath.startsWith('/uploads/uploads/')) {
+      cleanPath = cleanPath.substring(8); // Strip one /uploads (leaving /uploads/...)
+    }
+    return cleanPath;
+  }
+  
+  if (cleanPath.startsWith('uploads/uploads/')) {
+    cleanPath = cleanPath.substring(8); // Strip one uploads/
+  }
+  
+  if (cleanPath.startsWith('uploads/') || cleanPath.startsWith('assets/')) {
+    return `/${cleanPath}`;
+  }
+  
+  return `/uploads/${cleanPath}`;
 };
 

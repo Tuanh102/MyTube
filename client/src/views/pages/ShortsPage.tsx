@@ -107,13 +107,14 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
 
   const fetchComments = async (videoId: number) => {
     try {
-      const res = await fetch(`http://localhost:5000/comments/video/${videoId}`);
+      const res = await fetch(`http://127.0.0.1:5000/comments/video/${videoId}`);
       if (res.ok) {
         const rawComments = await res.json();
         const formatted = rawComments.map((c: any) => ({
           comment_id: c._id,
-          username: c.user?.username || 'Unknown',
-          avatar: c.user?.avatar || '/assets/img/default-avatar.png',
+          username: c.user?.username || c.user?.name || 'Unknown',
+          avatar: c.user?.avatar || c.user?.avatar_url || '/assets/img/default-avatar.png',
+          is_premium: c.user?.is_premium || false,
           content: c.content,
           created_at: c.createdAt,
           likes_count: c.likes?.length || 0,
@@ -123,8 +124,9 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
           parent_comment_id: c.parentComment || null,
           replies: c.replies?.map((r: any) => ({
             comment_id: r._id,
-            username: r.user?.username || 'Unknown',
-            avatar: r.user?.avatar || '/assets/img/default-avatar.png',
+            username: r.user?.username || r.user?.name || 'Unknown',
+            avatar: r.user?.avatar || r.user?.avatar_url || '/assets/img/default-avatar.png',
+            is_premium: r.user?.is_premium || false,
             content: r.content,
             created_at: r.createdAt,
             likes_count: r.likes?.length || 0,
@@ -229,6 +231,7 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
           comment_id: res.comment?._id || res.comment?.id || Date.now().toString(),
           username: user.name || user.username || 'You',
           avatar: user.image || '/assets/img/avata.jpg',
+          is_premium: user.is_premium || false,
           content: commentContent,
           created_at: new Date().toISOString(),
           likes_count: 0,
@@ -402,10 +405,39 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
           {threadedComments.length > 0 ? threadedComments.map((comment) => (
             <div key={comment.comment_id} className="group">
               <div className="flex gap-3">
-                <img src={getUploadUrl(comment.avatar, '/assets/img/avata.jpg')} className="w-8 h-8 rounded-full object-cover bg-white/10 flex-shrink-0" alt="" />
+                <div className={`w-8 h-8 rounded-full flex-shrink-0 bg-white/10 relative ${
+                  comment.is_premium 
+                    ? 'p-[1.5px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-yellow-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]' 
+                    : 'overflow-hidden'
+                }`}>
+                  <img 
+                    src={getUploadUrl(comment.avatar, '/assets/img/avata.jpg')} 
+                    className="w-full h-full object-cover rounded-full" 
+                    alt="" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/assets/img/avata.jpg';
+                    }}
+                  />
+                  {comment.is_premium && (
+                    <span className="absolute -bottom-0.5 -right-0.5 bg-gradient-to-tr from-amber-500 to-yellow-500 text-zinc-950 text-[7px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-black shadow border border-zinc-900 select-none">
+                      ★
+                    </span>
+                  )}
+                </div>
                 <div className="flex-1">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-white/60 font-bold text-xs">@{comment.username}</span>
+                    <span className={`font-bold text-xs flex items-center gap-1 ${
+                      comment.is_premium 
+                        ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent drop-shadow-sm font-black' 
+                        : 'text-white/60'
+                    }`}>
+                      @{comment.username}
+                      {comment.is_premium && (
+                        <span className="px-1 py-0.2 rounded text-[7px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-950 shadow-[0_0_4px_rgba(245,158,11,0.3)] select-none">
+                          ★ PREMIUM
+                        </span>
+                      )}
+                    </span>
                     <span className="text-white/40 text-[10px]">{new Date(comment.created_at).toLocaleDateString('vi-VN')}</span>
                   </div>
                   <p className="text-white text-sm leading-relaxed break-words">
@@ -455,10 +487,39 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
                           <div className="mt-3 space-y-3 ml-1 border-l border-white/10 pl-3 mb-3">
                             {comment.replies.map((reply: any) => (
                               <div key={reply.comment_id} className="flex gap-2">
-                                <img src={getUploadUrl(reply.avatar, '/assets/img/avata.jpg')} className="w-6 h-6 rounded-full object-cover bg-white/10 flex-shrink-0" alt="" />
+                                <div className={`w-6 h-6 rounded-full flex-shrink-0 bg-white/10 relative ${
+                                  reply.is_premium 
+                                    ? 'p-[1px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-yellow-600 shadow-[0_0_8px_rgba(245,158,11,0.4)]' 
+                                    : 'overflow-hidden'
+                                }`}>
+                                  <img 
+                                    src={getUploadUrl(reply.avatar, '/assets/img/avata.jpg')} 
+                                    className="w-full h-full object-cover rounded-full" 
+                                    alt="" 
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/assets/img/avata.jpg';
+                                    }}
+                                  />
+                                  {reply.is_premium && (
+                                    <span className="absolute -bottom-0.5 -right-0.5 bg-gradient-to-tr from-amber-500 to-yellow-500 text-zinc-950 text-[5px] w-2.5 h-2.5 rounded-full flex items-center justify-center font-black shadow border border-zinc-900 select-none">
+                                      ★
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex-1">
                                   <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="text-white/60 font-bold text-[11px]">@{reply.username}</span>
+                                    <span className={`font-bold text-[11px] flex items-center gap-1 ${
+                                      reply.is_premium 
+                                        ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent drop-shadow-sm font-black' 
+                                        : 'text-white/60'
+                                    }`}>
+                                      @{reply.username}
+                                      {reply.is_premium && (
+                                        <span className="px-1 py-0.2 rounded text-[6px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-950 shadow-[0_0_3px_rgba(245,158,11,0.3)] select-none">
+                                          ★ PREMIUM
+                                        </span>
+                                      )}
+                                    </span>
                                     <span className="text-white/40 text-[9px]">{new Date(reply.created_at).toLocaleDateString('vi-VN')}</span>
                                   </div>
                                   <p className="text-white text-xs leading-relaxed break-words">

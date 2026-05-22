@@ -16,7 +16,8 @@ export async function PATCH(
     { params }: { params: { id: string } }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -46,14 +47,14 @@ export async function PATCH(
             const buffer = Buffer.from(bytes);
 
             const filename = `${Date.now()}-${thumbnailFile.name}`;
-            const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+            const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
             await mkdir(uploadDir, { recursive: true });
             const filePath = path.join(uploadDir, filename);
             await writeFile(filePath, buffer);
             updateData.thumbnail_url = `/uploads/${filename}`;
         }
 
-        const res = await fetch(`http://localhost:5000/videos/${id}`, {
+        const res = await fetch(`http://127.0.0.1:5000/videos/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateData)
@@ -76,7 +77,8 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -84,7 +86,7 @@ export async function DELETE(
 
     try {
         // 1. Fetch video details from DB first to get public_ids
-        const videoRes = await fetch(`http://localhost:5000/videos/${id}`);
+        const videoRes = await fetch(`http://127.0.0.1:5000/videos/${id}?userId=${user.id}`);
         const videoData = await videoRes.json();
         
         if (!videoRes.ok || !videoData.video) {
@@ -102,7 +104,7 @@ export async function DELETE(
         }
 
         // 3. Delete from DB
-        const res = await fetch(`http://localhost:5000/videos/${id}`, {
+        const res = await fetch(`http://127.0.0.1:5000/videos/${id}`, {
             method: 'DELETE',
         });
 

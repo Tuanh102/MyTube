@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
     const videoId = searchParams.get('videoId') || 'all';
 
     try {
-        const res = await fetch(`http://localhost:5000/comments/studio?userId=${session.user.id}&videoId=${videoId}`);
+        const res = await fetch(`http://127.0.0.1:5000/comments/studio?userId=${user.id}&videoId=${videoId}`);
         const data = await res.json();
         return NextResponse.json(data);
     } catch (err: any) {
@@ -23,16 +24,17 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
         const body = await req.json();
-        const res = await fetch(`http://localhost:5000/comments`, {
+        const res = await fetch(`http://127.0.0.1:5000/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...body, userId: session.user.id })
+            body: JSON.stringify({ ...body, userId: user.id })
         });
         const data = await res.json();
         return NextResponse.json(data);
@@ -43,7 +45,8 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -51,7 +54,7 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
 
     try {
-        const res = await fetch(`http://localhost:5000/comments/${id}`, {
+        const res = await fetch(`http://127.0.0.1:5000/comments/${id}`, {
             method: 'DELETE'
         });
         const data = await res.json();

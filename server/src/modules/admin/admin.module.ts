@@ -7,6 +7,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { Video, VideoSchema } from '../videos/schemas/video.schema';
 import { Order, OrderSchema } from '../payments/schemas/order.schema';
 import { VideosModule } from '../videos/videos.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { VideosModule } from '../videos/videos.module';
       { name: Order.name, schema: OrderSchema },
     ]),
     VideosModule,
+    PaymentsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

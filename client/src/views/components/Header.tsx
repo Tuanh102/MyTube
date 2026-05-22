@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Search, Bell, User, LogOut, Key, UserCircle, Plus, Crown, CreditCard, Clapperboard, Star, Ticket, Sparkles, Calendar } from 'lucide-react';
+import { Menu, Search, Bell, User, LogOut, Key, UserCircle, Plus, Crown, CreditCard, Clapperboard, Star, Ticket, Sparkles, Calendar, Sun, Moon, Laptop } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useUI } from '@/context/UIContext';
@@ -138,7 +138,9 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const { data: session, update } = useSession();
-  const { toggleSidebar, isLoginDropdownOpen, setIsLoginDropdownOpen } = useUI(); // Nhận biến từ UIContext
+  const { toggleSidebar, isLoginDropdownOpen, setIsLoginDropdownOpen, theme, setTheme } = useUI(); // Nhận biến từ UIContext
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
+  const themeDropdownRef = React.useRef<HTMLDivElement>(null);
   const user = session?.user;
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -155,6 +157,9 @@ export default function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsLoginDropdownOpen(false);
         setIsAuthOpen(false);
+      }
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
+        setIsThemeDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -202,10 +207,12 @@ export default function Header() {
   const fetchUnreadCount = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/support/unread-count?userId=${user.id}`);
+      const res = await fetch(`http://127.0.0.1:5000/notifications?userId=${user.id}&filter=unread`);
       if (res.ok) {
         const data = await res.json();
-        setUnreadCount(data.count);
+        if (Array.isArray(data)) {
+          setUnreadCount(data.length);
+        }
       }
     } catch (err) {
       console.error('Lỗi lấy thông báo:', err);
@@ -288,6 +295,81 @@ export default function Header() {
             </span>
           )}
         </button>
+
+        {/* Nút cài đặt giao diện Đa Chế Độ */}
+        <div className="relative" ref={themeDropdownRef}>
+          <button
+            onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+            title="Thay đổi giao diện"
+            className="p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer flex items-center justify-center"
+          >
+            {theme === 'light' ? (
+              <Sun size={22} className="text-amber-500 fill-amber-500/20" />
+            ) : theme === 'dark' ? (
+              <Moon size={22} className="text-indigo-400 fill-indigo-400/20" />
+            ) : (
+              <Laptop size={22} className="text-zinc-300" />
+            )}
+          </button>
+
+          {isThemeDropdownOpen && (
+            <div className="absolute top-12 right-0 w-48 bg-[#202020] border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="px-3 py-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+                Giao diện
+              </div>
+              <ul className="space-y-0.5 px-1.5 mt-1">
+                <li>
+                  <button
+                    onClick={() => {
+                      setTheme('system');
+                      setIsThemeDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                      theme === 'system' 
+                        ? 'bg-white/10 text-white font-semibold' 
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Laptop size={16} />
+                    <span>Mặc định hệ thống</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setTheme('light');
+                      setIsThemeDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                      theme === 'light' 
+                        ? 'bg-white/10 text-white font-semibold' 
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Sun size={16} className="text-amber-500" />
+                    <span>Giao diện Sáng</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setTheme('dark');
+                      setIsThemeDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                      theme === 'dark' 
+                        ? 'bg-white/10 text-white font-semibold' 
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Moon size={16} className="text-indigo-400" />
+                    <span>Giao diện Tối</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
 
         <div className="relative" ref={dropdownRef}>
           {user ? (

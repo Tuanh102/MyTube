@@ -16,7 +16,7 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
   const { isSidebarOpen, closeSidebar, setIsLoginDropdownOpen } = useUI(); // Nhận hàm kích hoạt login từ UIContext
 
   // Các đường dẫn yêu cầu phải có tài khoản (đăng nhập)
-  const authRequiredHrefs = ['/subscriptions', '/history', '/likes', '/saved', '/purchased'];
+  const authRequiredHrefs = ['/subscriptions', '/history', '/likes', '/saved', '/purchased', '/report'];
 
   const handleItemClick = (e: React.MouseEvent, item: any) => {
     // Nếu trang yêu cầu đăng nhập mà user chưa đăng nhập
@@ -41,7 +41,8 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
         { name: 'Shorts', icon: Film, href: '/shorts' },
       ]
     },
-    {
+    // Nhóm 'Của bạn' - Chỉ hiển thị khi đã đăng nhập
+    ...(user ? [{
       title: 'Của bạn',
       items: [
         { name: 'Kênh đăng ký', icon: Users, href: '/subscriptions' },
@@ -50,7 +51,7 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
         { name: 'Xem sau', icon: Clock, href: '/saved' },
         { name: 'Video đã mua', icon: Ticket, href: '/purchased' },
       ]
-    },
+    }] : []),
     {
       title: 'Khám phá',
       items: [
@@ -61,11 +62,12 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
         { name: 'Học tập', icon: Lightbulb, href: '/learning' },
       ]
     },
-    {
+    // Nhóm 'Báo cáo' - Chỉ hiển thị khi đã đăng nhập
+    ...(user ? [{
       items: [
         { name: 'Báo cáo', icon: Flag, href: '/report' },
       ]
-    }
+    }] : [])
   ];
 
   return (
@@ -135,6 +137,24 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
             </div>
           )}
           
+          {!user && (
+            <div className="mx-2 mb-4 p-4 rounded-2xl bg-gradient-to-br from-red-500/10 to-purple-500/10 border border-white/10 space-y-3 shadow-inner">
+              <p className="text-xs text-white/70 leading-relaxed">
+                Hãy đăng nhập để đăng ký kênh, lưu video yêu thích, theo dõi lịch sử và trải nghiệm trọn vẹn MyTube!
+              </p>
+              <button 
+                onClick={() => {
+                  closeSidebar();
+                  setIsLoginDropdownOpen(true);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-red-600/20 active:scale-95 transition-all cursor-pointer"
+              >
+                Đăng nhập ngay
+              </button>
+            </div>
+          )}
+
           <div className="px-4 py-2 text-[11px] text-white/30 space-y-4">
             <p>Dự án MyTube Next.js Migration. @ 2026 MyTube. All rights reserved.</p>
           </div>

@@ -6,7 +6,7 @@ export async function POST(req: Request) {
         const { username, phone, password } = body;
 
         // Gọi sang Server NestJS (Localhost:5000)
-        const res = await fetch(`http://localhost:5000/users/register`, {
+        const res = await fetch(`http://127.0.0.1:5000/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, phone, password })

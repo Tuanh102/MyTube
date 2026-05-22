@@ -16,26 +16,35 @@ export default function PaymentSuccess() {
     const isPremium = videoId === 'PREMIUM_MONTH' || videoId === 'PREMIUM_6MONTHS' || videoId === 'PREMIUM_YEAR';
  
     useEffect(() => {
+        const user = session?.user as any;
         const verifyPayment = async () => {
-            if (!session?.user?.id || !videoId) return;
+            if (!user?.id || !videoId) return;
  
             try {
                 const res = await fetch('/api/payments/verify-success', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: session.user.id, videoId, orderId: Number(orderId) })
+                    body: JSON.stringify({ userId: user.id, videoId, orderId: Number(orderId) })
                 });
  
                 if (res.ok) {
-                    if (isPremium) {
-                        // Kích hoạt cập nhật session NextAuth ngay tại chỗ!
-                        await update({
-                            ...session,
-                            user: {
-                                ...session?.user,
-                                is_premium: true
-                            }
-                        });
+                    // Cập nhật session NextAuth ngay lập tức để đồng bộ danh sách purchased_videos & premium!
+                    try {
+                        const profileRes = await fetch(`/api/users/profile/${user.id}`);
+                        if (profileRes.ok) {
+                            const freshUser = await profileRes.json();
+                            await update({
+                                ...session,
+                                user: {
+                                    ...session?.user,
+                                    is_premium: freshUser.is_premium || false,
+                                    purchased_videos: freshUser.purchased_videos || []
+                                }
+                            });
+                            console.log('[PAYMENT SUCCESS] Đã cập nhật session với profile mới nhất từ DB:', freshUser.purchased_videos);
+                        }
+                    } catch (syncErr) {
+                        console.error('[PAYMENT SUCCESS] Không thể đồng bộ session:', syncErr);
                     }
                     
                     setStatus('success');
@@ -57,7 +66,7 @@ export default function PaymentSuccess() {
             }
         };
  
-        if (session?.user?.id && videoId) {
+        if (user?.id && videoId) {
             verifyPayment();
         }
     }, [session, videoId, router, isPremium]);

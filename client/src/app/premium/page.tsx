@@ -136,7 +136,7 @@ export default function PremiumPage() {
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const user = session?.user;
+  const user = session?.user as any;
 
   // State hữu ích cho phần Customizer tương tác ở cột phải
   const [showVipGlow, setShowVipGlow] = useState(true);
@@ -464,7 +464,8 @@ export default function PremiumPage() {
   }
 
   const handleSelectPackage = async (packageType: 'month' | '6months' | 'year') => {
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
       const confirmLogin = window.confirm("Bạn cần đăng nhập để đăng ký gói MyTube Premium. Đi đến trang đăng nhập ngay?");
       if (confirmLogin) {
         router.push('/login?callbackUrl=/premium');
@@ -496,7 +497,7 @@ export default function PremiumPage() {
         body: JSON.stringify({
           amount,
           videoId,
-          userId: session.user.id,
+          userId: user.id,
           description
         })
       });

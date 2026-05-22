@@ -11,6 +11,7 @@ export const metadata = {
 
 export default async function Page() {
   const session = await getServerSession(authOptions);
+  const user = session?.user as any;
   
   if (!session) {
     redirect("/login");
@@ -21,8 +22,8 @@ export default async function Page() {
   
   // Lọc bỏ các video mà chính người dùng hiện tại là chủ sở hữu (chủ kênh đăng)
   const filteredVideos = Array.isArray(purchasedVideos) ? purchasedVideos.filter((v: any) => {
-    const isMyVideo = v.channel?.user?.toString() === session.user.id?.toString() ||
-                      v.user_id?.toString() === session.user.id?.toString();
+    const isMyVideo = v.channel?.user?.toString() === user?.id?.toString() ||
+                      v.user_id?.toString() === user?.id?.toString();
     return !isMyVideo;
   }) : [];
   

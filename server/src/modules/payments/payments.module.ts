@@ -6,6 +6,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { Video, VideoSchema } from '../videos/schemas/video.schema';
 import { Order, OrderSchema } from './schemas/order.schema';
 import { Admin, AdminSchema } from '../admin/schemas/admin.schema';
+import { Withdrawal, WithdrawalSchema } from './schemas/withdrawal.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Admin, AdminSchema } from '../admin/schemas/admin.schema';
       { name: Video.name, schema: VideoSchema },
       { name: Order.name, schema: OrderSchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: Withdrawal.name, schema: WithdrawalSchema },
     ]),
   ],
   controllers: [PaymentsController],

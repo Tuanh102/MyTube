@@ -51,4 +51,33 @@ export class ChannelsService {
 
     return { success: true };
   }
+
+  async toggleFollow(id: string, userId: string) {
+    const channel = await this.channelModel.findById(id).exec();
+    if (!channel) return { success: false, message: 'Kênh không tồn tại' };
+
+    const subscribers = (channel.subscribers || []).map(s => s.toString());
+    const isFollowed = subscribers.includes(userId);
+
+    let updatedChannel;
+    if (isFollowed) {
+      updatedChannel = await this.channelModel.findByIdAndUpdate(
+        id,
+        { $pull: { subscribers: userId } },
+        { new: true }
+      ).exec();
+    } else {
+      updatedChannel = await this.channelModel.findByIdAndUpdate(
+        id,
+        { $addToSet: { subscribers: userId } },
+        { new: true }
+      ).exec();
+    }
+
+    return {
+      success: true,
+      isFollowed: !isFollowed,
+      subCount: updatedChannel.subscribers?.length || 0
+    };
+  }
 }

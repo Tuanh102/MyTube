@@ -23,6 +23,9 @@ export class Channel {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user: User;
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
+  subscribers: User[];
 }
 
 export const ChannelSchema = SchemaFactory.createForClass(Channel);

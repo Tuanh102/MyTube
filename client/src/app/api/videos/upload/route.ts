@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
         const duration = formData.get('duration');
         const categoryId = formData.get('categoryId');
 
-        const res = await fetch(`http://localhost:5000/videos`, {
+        const res = await fetch(`http://127.0.0.1:5000/videos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

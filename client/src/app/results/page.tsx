@@ -1,4 +1,6 @@
 import ResultsPage from "@/views/pages/ResultsPage";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../api/auth/[...nextauth]/route";
 
 export default async function Page({
   searchParams,
@@ -8,9 +10,17 @@ export default async function Page({
   const { search_query } = await searchParams;
   const query = search_query || '';
   
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id || "";
+
   let videos: any[] = [];
   try {
-    const res = await fetch(`http://127.0.0.1:5000/videos/home${query ? `?search=${encodeURIComponent(query)}` : ''}`, { cache: 'no-store' });
+    const params = new URLSearchParams();
+    if (query) params.append('search', query);
+    if (userId) params.append('userId', userId);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const res = await fetch(`http://127.0.0.1:5000/videos/home${queryString}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       videos = data.map((v: any) => ({

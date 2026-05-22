@@ -9,7 +9,8 @@ export async function PATCH(
     { params }: { params: { id: string } }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,7 +27,7 @@ export async function PATCH(
         if (name) updateData.channel_name = name;
         if (description) updateData.description = description;
 
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
         await mkdir(uploadDir, { recursive: true });
 
         if (avatarFile && avatarFile.size > 0) {
@@ -47,7 +48,7 @@ export async function PATCH(
             updateData.banner_url = `/uploads/${filename}`;
         }
 
-        const res = await fetch(`http://localhost:5000/channels/${id}`, {
+        const res = await fetch(`http://127.0.0.1:5000/channels/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateData)
@@ -70,14 +71,15 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = params;
 
     try {
-        const res = await fetch(`http://localhost:5000/channels/${id}`, {
+        const res = await fetch(`http://127.0.0.1:5000/channels/${id}`, {
             method: 'DELETE',
         });
 

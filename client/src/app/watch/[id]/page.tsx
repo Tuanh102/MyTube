@@ -23,10 +23,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id || "";
   const { id } = await params;
   let data: any = null;
   try {
-    const res = await fetch(`http://127.0.0.1:5000/videos/${id}`, { cache: 'no-store' });
+    const res = await fetch(`http://127.0.0.1:5000/videos/${id}?userId=${userId}`, { cache: 'no-store' });
     if (res.ok) {
       const apiData = await res.json();
       if (apiData && apiData.video) {
@@ -46,7 +47,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             channel_name: apiData.video.channel?.channel_name || 'Unknown',
             channel_avatar: apiData.video.channel?.avatar_url || '/assets/img/default-channel-avatar.jpg',
             channel_user_id: apiData.video.channel?.user?.toString() || '',
-            sub_count: 0,
+            sub_count: apiData.video.channel?.subscribers?.length || 0,
+            is_followed: (userId && apiData.video.channel?.subscribers?.map((subId: any) => subId.toString()).includes(userId.toString())) ? 1 : 0,
             is_free: apiData.video.is_free,
             price: apiData.video.price
           },
@@ -74,9 +76,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             const rawComments = await commentsRes.json();
             data.comments = rawComments.map((c: any) => ({
               comment_id: c._id,
-              username: c.channel?.channel_name || c.user?.name || 'Unknown',
-              avatar: c.channel?.avatar_url || c.user?.avatar_url || '/assets/img/default-avatar.png',
+              username: c.channel?.channel_name || c.user?.username || c.user?.name || 'Unknown',
+              avatar: c.channel?.avatar_url || c.user?.avatar || c.user?.avatar_url || '/assets/img/default-avatar.png',
               is_channel: !!c.channel,
+              is_premium: c.user?.is_premium || false,
               content: c.content,
               created_at: c.createdAt,
               likes_count: c.likes?.length || 0,
@@ -86,9 +89,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               parent_comment_id: c.parentComment || null,
               replies: c.replies?.map((r: any) => ({
                 comment_id: r._id,
-                username: r.channel?.channel_name || r.user?.name || 'Unknown',
-                avatar: r.channel?.avatar_url || r.user?.avatar_url || '/assets/img/default-avatar.png',
+                username: r.channel?.channel_name || r.user?.username || r.user?.name || 'Unknown',
+                avatar: r.channel?.avatar_url || r.user?.avatar || r.user?.avatar_url || '/assets/img/default-avatar.png',
                 is_channel: !!r.channel,
+                is_premium: r.user?.is_premium || false,
                 content: r.content,
                 created_at: r.createdAt,
                 likes_count: r.likes?.length || 0,

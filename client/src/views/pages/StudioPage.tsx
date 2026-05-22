@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Video, Tv, Layout, Settings, Trash2, Edit2, PlayCircle, BarChart2, Users, MessageSquare, Eye, Search, ThumbsUp, ThumbsDown, Calendar, HelpCircle, Send, Zap, ShieldCheck } from 'lucide-react';
 import { toggleCommentInteraction } from '@/lib/actions';
 
@@ -12,9 +12,23 @@ import EditVideoModal from '../components/modals/EditVideoModal';
 import EditChannelModal from '../components/modals/EditChannelModal';
 import { formatDuration, getUploadUrl } from '@/lib/utils';
 
+const VIETNAMESE_BANKS = [
+  { code: 'MB', name: 'MB Bank (Ngân hàng Quân đội)' },
+  { code: 'VCB', name: 'Vietcombank (Ngoại thương VN)' },
+  { code: 'TCB', name: 'Techcombank (Kỹ thương VN)' },
+  { code: 'ACB', name: 'ACB (Á Châu)' },
+  { code: 'BIDV', name: 'BIDV (Đầu tư và Phát triển VN)' },
+  { code: 'CTG', name: 'VietinBank (Công Thương VN)' },
+  { code: 'VBA', name: 'Agribank (Nông nghiệp VN)' },
+  { code: 'TPB', name: 'TPBank (Tiên Phong)' },
+  { code: 'VPB', name: 'VPBank (Việt Nam Thịnh Vượng)' },
+  { code: 'STB', name: 'Sacombank (Sài Gòn Thương Tín)' },
+];
+
 export default function StudioPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [channels, setChannels] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +62,28 @@ export default function StudioPage() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [ticketReplyText, setTicketReplyText] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+  // Withdrawals State
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({
+    amount: '',
+    bankName: 'MB',
+    bankAccount: '',
+    bankAccountHolder: '',
+  });
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+    const search = searchParams.get('search');
+    if (search) {
+      setSearchQuery(search);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -97,17 +133,30 @@ export default function StudioPage() {
   const fetchTickets = async () => {
     if (!session?.user?.id) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/support/my-tickets?userId=${session.user.id}`);
+      const res = await fetch(`http://127.0.0.1:5000/api/support/my-tickets?userId=${session.user.id}`);
       if (res.ok) setTickets(await res.json());
     } catch (err) {
       console.error(err);
     }
   };
 
+  const fetchWithdrawals = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const res = await fetch(`/api/payments/withdrawals/${session.user.id}`);
+      if (res.ok) setWithdrawals(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    if (status === 'authenticated' && activeTab === 'comments') {
-      fetchComments();
-    } else if (status === 'authenticated') {
+    if (status === 'authenticated') {
+      if (activeTab === 'comments') {
+        fetchComments();
+      } else if (activeTab === 'revenue') {
+        fetchWithdrawals();
+      }
       fetchTickets();
     }
   }, [status, selectedVideoForComments, debouncedCommentSearch, unrepliedOnly, activeTab]);
@@ -117,7 +166,7 @@ export default function StudioPage() {
     // Đánh dấu đã đọc khi click vào
     if (!ticket.isReadByUser) {
       try {
-        await fetch(`http://localhost:5000/api/support/mark-read/${ticket._id}`, { method: 'POST' });
+        await fetch(`http://127.0.0.1:5000/api/support/mark-read/${ticket._id}`, { method: 'POST' });
         setTickets(prev => prev.map(t => t._id === ticket._id ? { ...t, isReadByUser: true } : t));
       } catch (err) {
         console.error(err);
@@ -213,10 +262,10 @@ export default function StudioPage() {
     }
   };
 
-  const handleToggleCommentLike = async (commentId: number, videoId: number, type: 'like' | 'dislike') => {
+  const handleToggleCommentLike = async (commentId: number | string, videoId: number | string, type: 'like' | 'dislike') => {
     if (!session?.user?.id) return;
     try {
-      await toggleCommentInteraction(commentId, Number(session.user.id), videoId, type);
+      await toggleCommentInteraction(commentId.toString(), session.user.id, videoId.toString(), type);
       fetchComments();
     } catch (err) {
       console.error(err);
@@ -233,7 +282,7 @@ export default function StudioPage() {
     
     setIsSubmittingTicket(true);
     try {
-      const res = await fetch('http://localhost:5000/api/support/ticket', {
+      const res = await fetch('http://127.0.0.1:5000/api/support/ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +309,7 @@ export default function StudioPage() {
     if (!ticketReplyText.trim() || !session?.user?.id) return;
     setIsSendingMessage(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/support/message/${ticketId}`, {
+      const res = await fetch(`http://127.0.0.1:5000/api/support/message/${ticketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -279,6 +328,62 @@ export default function StudioPage() {
       console.error(err);
     } finally {
       setIsSendingMessage(false);
+    }
+  };
+
+  const handleSubmitWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.id) return;
+    const amountNum = Number(withdrawForm.amount);
+    const balanceNum = overviewData?.summary?.balance || 0;
+
+    if (!amountNum || amountNum <= 0) {
+      alert('Số tiền rút không hợp lệ!');
+      return;
+    }
+    if (amountNum > balanceNum) {
+      alert('Số tiền rút vượt quá số dư khả dụng!');
+      return;
+    }
+    if (!withdrawForm.bankAccount.trim() || !withdrawForm.bankAccountHolder.trim()) {
+      alert('Vui lòng nhập đầy đủ thông tin tài khoản!');
+      return;
+    }
+
+    setIsSubmittingWithdraw(true);
+    try {
+      const res = await fetch('/api/payments/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: session.user.id,
+          amount: amountNum,
+          bankName: withdrawForm.bankName,
+          bankAccount: withdrawForm.bankAccount.trim(),
+          bankAccountHolder: withdrawForm.bankAccountHolder.trim().toUpperCase(),
+        }),
+      });
+
+      if (res.ok) {
+        setWithdrawForm({
+          amount: '',
+          bankName: 'MB',
+          bankAccount: '',
+          bankAccountHolder: '',
+        });
+        setShowWithdrawModal(false);
+        alert('Yêu cầu rút tiền thành công! Sẽ được giải quyết trong vòng 24 giờ làm việc.');
+        fetchData(false); // Reload overview/balance
+        fetchWithdrawals(); // Reload history
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || 'Lỗi khi gửi yêu cầu rút tiền');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Không thể kết nối đến máy chủ.');
+    } finally {
+      setIsSubmittingWithdraw(false);
     }
   };
 
@@ -746,8 +851,8 @@ export default function StudioPage() {
                   <p className="text-green-500 font-bold mb-2 flex items-center gap-2"><div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />Số dư khả dụng</p>
                   <h2 className="text-5xl font-black text-white mb-8 tracking-tighter">{overviewData?.summary.balance?.toLocaleString('vi-VN')} <span className="text-2xl text-white/40">VNĐ</span></h2>
                   <div className="flex flex-wrap gap-4">
-                    <button className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-2xl transition shadow-lg shadow-green-600/20 flex items-center gap-2 active:scale-95"><Plus size={20} /> Rút tiền</button>
-                    <button className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-2xl transition border border-white/10 flex items-center gap-2">Lịch sử giao dịch</button>
+                    <button onClick={() => setShowWithdrawModal(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-2xl transition shadow-lg shadow-green-600/20 flex items-center gap-2 active:scale-95"><Plus size={20} /> Rút tiền</button>
+                    <button onClick={fetchWithdrawals} className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-2xl transition border border-white/10 flex items-center gap-2">Tải lại lịch sử</button>
                   </div>
                 </div>
                 <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-green-600/10 blur-[100px] rounded-full" />
@@ -756,6 +861,64 @@ export default function StudioPage() {
                 <h3 className="text-white/40 font-bold text-sm uppercase tracking-widest mb-4">Phí nền tảng</h3>
                 <div className="flex items-end gap-2 mb-6"><span className="text-4xl font-bold text-white">10%</span><span className="text-white/40 mb-1 text-sm">mỗi giao dịch</span></div>
                 <p className="text-white/60 text-xs leading-relaxed">Phí này được dùng để duy trì hệ thống MyTube và hỗ trợ kỹ thuật cho các Creator.</p>
+              </div>
+            </div>
+
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl p-8">
+              <h3 className="text-white font-bold text-lg mb-6">Lịch sử yêu cầu rút tiền</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-white/40 text-xs uppercase">
+                      <th className="py-4 font-medium">Ngân hàng</th>
+                      <th className="py-4 font-medium">Số tài khoản</th>
+                      <th className="py-4 font-medium">Chủ tài khoản</th>
+                      <th className="py-4 font-medium text-right">Số tiền</th>
+                      <th className="py-4 font-medium text-center">Trạng thái</th>
+                      <th className="py-4 font-medium text-center">Hình thức</th>
+                      <th className="py-4 font-medium text-right">Ngày gửi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {withdrawals.length > 0 ? (
+                      withdrawals.map((w) => (
+                        <tr key={w._id} className="hover:bg-white/[0.02] transition-colors text-sm">
+                          <td className="py-4 font-medium text-white">{w.bankName}</td>
+                          <td className="py-4 text-white/60 font-mono">{w.bankAccount}</td>
+                          <td className="py-4 text-white/60">{w.bankAccountHolder}</td>
+                          <td className="py-4 text-right font-bold text-green-500">{w.amount.toLocaleString('vi-VN')}đ</td>
+                          <td className="py-4 text-center">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              w.status === 'SUCCESS' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                              w.status === 'REJECTED' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                              'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                            }`}>
+                              {w.status === 'SUCCESS' ? 'Thành công' :
+                               w.status === 'REJECTED' ? 'Bị từ chối' : 'Chờ xử lý'}
+                            </span>
+                            {w.status === 'REJECTED' && w.rejectReason && (
+                              <p className="text-[10px] text-red-500 mt-1 italic">Lý do: {w.rejectReason}</p>
+                            )}
+                          </td>
+                          <td className="py-4 text-center">
+                            <span className="text-xs text-white/40">
+                              {w.status === 'SUCCESS' ? (w.method === 'AUTOMATIC' ? 'Chi tự động' : 'Chuyển khoản') : '-'}
+                            </span>
+                          </td>
+                          <td className="py-4 text-right text-white/40 text-xs">
+                            {new Date(w.createdAt).toLocaleDateString('vi-VN')} {new Date(w.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-white/20 italic">
+                          Chưa có yêu cầu rút tiền nào được tạo.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -904,6 +1067,116 @@ export default function StudioPage() {
       <UploadVideoModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} channels={channels} />
       <EditVideoModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} video={selectedVideo} onSuccess={() => fetchData(false)} />
       <EditChannelModal isOpen={isEditChannelModalOpen} onClose={() => setIsEditChannelModalOpen(false)} channel={selectedChannelForEdit} onSuccess={() => fetchData(false)} />
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl max-w-lg w-full p-8 relative shadow-2xl animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setShowWithdrawModal(false)}
+              className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors text-sm font-bold"
+            >
+              Hủy bỏ
+            </button>
+            
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <Plus size={20} className="text-green-500" /> Tạo yêu cầu rút tiền
+            </h3>
+            <p className="text-white/40 text-xs mb-6">Yêu cầu của bạn sẽ được phê duyệt và giải quyết trong vòng 24 giờ làm việc.</p>
+
+            <div className="bg-green-500/5 border border-green-500/10 rounded-2xl p-4 mb-6 flex justify-between items-center">
+              <div>
+                <p className="text-green-500 text-xs font-bold uppercase tracking-wider mb-0.5">Số dư khả dụng</p>
+                <p className="text-white/40 text-[10px]">Tối đa số tiền có thể rút</p>
+              </div>
+              <p className="text-2xl font-black text-white">{(overviewData?.summary?.balance || 0).toLocaleString('vi-VN')} đ</p>
+            </div>
+
+            <form onSubmit={handleSubmitWithdraw} className="space-y-5">
+              <div>
+                <label className="text-[10px] font-black text-white/40 uppercase mb-2 block tracking-wider">Số tiền rút (VNĐ)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    value={withdrawForm.amount}
+                    onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+                    placeholder="Nhập số tiền muốn rút..."
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-green-500 transition text-lg"
+                    required
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1.5">
+                    <button 
+                      type="button" 
+                      onClick={() => setWithdrawForm({ ...withdrawForm, amount: String(Math.floor(overviewData?.summary?.balance || 0)) })}
+                      className="bg-green-600/10 hover:bg-green-600/20 text-green-500 text-xs font-bold px-3 py-1.5 rounded-xl transition"
+                    >
+                      Tối đa
+                    </button>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2.5">
+                  {[50000, 100000, 200000, 500000].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setWithdrawForm({ ...withdrawForm, amount: String(val) })}
+                      className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white/60 hover:text-white rounded-xl px-3 py-1.5 text-xs transition"
+                    >
+                      {val.toLocaleString('vi-VN')}đ
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-white/40 uppercase mb-2 block tracking-wider">Ngân hàng thụ hưởng</label>
+                <select 
+                  value={withdrawForm.bankName}
+                  onChange={(e) => setWithdrawForm({ ...withdrawForm, bankName: e.target.value })}
+                  className="w-full bg-[#242424] border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-green-500 transition cursor-pointer text-sm"
+                >
+                  {VIETNAMESE_BANKS.map((b) => (
+                    <option key={b.code} value={b.code}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-white/40 uppercase mb-2 block tracking-wider">Số tài khoản</label>
+                  <input 
+                    type="text" 
+                    value={withdrawForm.bankAccount}
+                    onChange={(e) => setWithdrawForm({ ...withdrawForm, bankAccount: e.target.value })}
+                    placeholder="Ví dụ: 123456789..."
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-green-500 transition text-sm font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-white/40 uppercase mb-2 block tracking-wider">Tên chủ tài khoản</label>
+                  <input 
+                    type="text" 
+                    value={withdrawForm.bankAccountHolder}
+                    onChange={(e) => setWithdrawForm({ ...withdrawForm, bankAccountHolder: e.target.value.toUpperCase() })}
+                    placeholder="NGUYEN VAN A"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-green-500 transition text-sm uppercase font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSubmittingWithdraw}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-900 text-white font-black py-4 rounded-2xl transition shadow-xl shadow-green-600/10 flex items-center justify-center gap-3 uppercase tracking-widest text-xs mt-6"
+              >
+                {isSubmittingWithdraw ? 'Đang xử lý...' : 'Xác nhận rút tiền'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

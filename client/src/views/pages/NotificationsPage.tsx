@@ -4,10 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { markNotificationsRead, markSingleNotificationRead, deleteNotificationAction, clearAllNotificationsAction } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
+import { getUploadUrl } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
 import { Bell, Heart, MessageSquare, UserPlus, PlayCircle, CheckCircle2, X, Trash2 } from 'lucide-react';
 
 interface Notification {
-  notification_id: number;
+  notification_id: string;
   type: string;
   actor_name: string;
   actor_avatar: string;
@@ -16,8 +18,8 @@ interface Notification {
   message: string;
   is_read: number;
   created_at: string;
-  target_id: number;
-  actor_id: number;
+  target_id: string;
+  actor_id: string;
 }
 
 interface NotificationsPageProps {
@@ -27,8 +29,9 @@ interface NotificationsPageProps {
 
 export default function NotificationsPage({ notifications: initialNotifications, filter }: NotificationsPageProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [localNotifications, setLocalNotifications] = React.useState(initialNotifications);
-  const [justDeleted, setJustDeleted] = React.useState<number[]>([]);
+  const [justDeleted, setJustDeleted] = React.useState<string[]>([]);
 
   // Sync state if props change, but KEEP filtering out things we just deleted
   React.useEffect(() => {
@@ -36,20 +39,24 @@ export default function NotificationsPage({ notifications: initialNotifications,
   }, [initialNotifications, justDeleted]);
 
   const handleMarkAllRead = async () => {
+    const userId = (session?.user as any)?.id;
+    if (!userId) return;
     setLocalNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
-    await markNotificationsRead();
+    await markNotificationsRead(userId);
     router.refresh();
   };
 
   const handleClearAll = async () => {
+    const userId = (session?.user as any)?.id;
+    if (!userId) return;
     if (confirm('Bạn có chắc muốn xóa tất cả thông báo không?')) {
       setLocalNotifications([]);
-      await clearAllNotificationsAction();
+      await clearAllNotificationsAction(userId);
       router.refresh();
     }
   };
 
-  const handleDeleteNotification = async (e: React.MouseEvent, id: number) => {
+  const handleDeleteNotification = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -60,8 +67,6 @@ export default function NotificationsPage({ notifications: initialNotifications,
     try {
       const res = await deleteNotificationAction(id);
       if (!res.success) {
-        // If server failed, we could potentially remove from justDeleted
-        // but for now let's just refresh to get latest state
         router.refresh();
       }
     } catch (err) {
@@ -70,10 +75,8 @@ export default function NotificationsPage({ notifications: initialNotifications,
     }
   };
 
-
   const handleNotificationClick = (e: React.MouseEvent, n: Notification) => {
     // If it's a delete button click, it should have been caught by handleDeleteNotification
-    // But double check
     if ((e.target as HTMLElement).closest('button[title="Xóa thông báo"]')) {
       return;
     }
@@ -81,7 +84,6 @@ export default function NotificationsPage({ notifications: initialNotifications,
     e.preventDefault();
     const url = getTargetUrl(n);
 
-    
     // Mark as read in background
     if (!n.is_read) {
       markSingleNotificationRead(n.notification_id).catch(console.error);
@@ -168,7 +170,7 @@ export default function NotificationsPage({ notifications: initialNotifications,
               {!n.is_read && <div className="absolute left-2 w-1.5 h-1.5 bg-red-600 rounded-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />}
               
               <img 
-                src={n.actor_avatar || '/assets/img/avata.jpg'} 
+                src={getUploadUrl(n.actor_avatar, '/assets/img/avata.jpg')} 
                 className="w-12 h-12 rounded-full object-cover flex-shrink-0" 
                 alt="" 
               />
@@ -187,7 +189,7 @@ export default function NotificationsPage({ notifications: initialNotifications,
 
               {n.video_thumb && (
                 <div className="w-16 aspect-video rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
-                  <img src={`/uploads/${n.video_thumb}`} className="w-full h-full object-cover" alt="" />
+                  <img src={getUploadUrl(n.video_thumb)} className="w-full h-full object-cover" alt="" />
                 </div>
               )}
 

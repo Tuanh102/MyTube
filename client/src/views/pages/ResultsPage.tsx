@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, getUploadUrl } from '@/lib/utils';
 import { useUI } from '@/context/UIContext';
 
 interface ResultsPageProps {
@@ -60,7 +60,7 @@ function VideoResultCard({ video }: { video: any }) {
       {/* Thumbnail */}
       <Link href={`/watch/${video.video_id}`} className="relative w-full sm:w-[360px] aspect-video rounded-xl overflow-hidden flex-shrink-0">
         <img 
-          src={video.thumbnail_url?.startsWith('http') ? video.thumbnail_url : (video.thumbnail_url ? `/uploads/${video.thumbnail_url}` : '/assets/img/default-thumb.jpg')} 
+          src={getUploadUrl(video.thumbnail_url, '/assets/img/default-thumb.jpg')} 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           alt={video.title}
         />
@@ -86,11 +86,7 @@ function VideoResultCard({ video }: { video: any }) {
         <div className="flex items-center gap-2 my-2">
           <div className="w-6 h-6 rounded-full overflow-hidden bg-white/5">
             <img 
-              src={video.channel_avatar ? (
-                video.channel_avatar.startsWith('/') || video.channel_avatar.startsWith('http') 
-                ? video.channel_avatar 
-                : `/uploads/${video.channel_avatar}`
-              ) : '/assets/img/avata.jpg'} 
+              src={getUploadUrl(video.channel_avatar, '/assets/img/avata.jpg')} 
               className="w-full h-full object-cover" 
               alt={video.channel_name} 
             />

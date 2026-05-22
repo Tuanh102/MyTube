@@ -22,7 +22,7 @@ export class CommentsService {
   async getCommentsByVideo(videoId: string) {
     const comments = await this.commentModel
       .find({ video: new Types.ObjectId(videoId) })
-      .populate('user', 'name avatar_url')
+      .populate('user', 'username avatar is_premium')
       .populate('channel', 'channel_name avatar_url')
       .sort({ createdAt: -1 })
       .exec();
@@ -100,7 +100,7 @@ export class CommentsService {
 
     const comments = await this.commentModel
       .find(query)
-      .populate('user', 'name avatar_url')
+      .populate('user', 'username avatar is_premium')
       .populate('channel', 'channel_name avatar_url')
       .populate('video', 'title thumbnail_url channel')
       .sort({ createdAt: -1 })

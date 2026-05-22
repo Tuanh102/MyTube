@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id || "";
   const { id } = await params;
   
   let channel: any = null;
@@ -32,12 +33,20 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     // 1. Fetch channel info
     const channelRes = await fetch(`http://127.0.0.1:5000/channels/${id}`, { cache: 'no-store' });
     if (channelRes.ok) {
-      channel = await channelRes.json();
+      const rawChannel = await channelRes.json();
+      if (rawChannel) {
+        channel = {
+          ...rawChannel,
+          channel_id: rawChannel._id,
+          sub_count: rawChannel.subscribers?.length || 0,
+          is_followed: (userId && rawChannel.subscribers?.map((subId: any) => subId.toString()).includes(userId.toString())) ? 1 : 0
+        };
+      }
     }
 
     // 2. Fetch channel videos
     // Use the existing studio/public endpoint for videos by channel ID
-    const videosRes = await fetch(`http://127.0.0.1:5000/videos/studio?channelId=${id}`, { cache: 'no-store' });
+    const videosRes = await fetch(`http://127.0.0.1:5000/videos/studio?channelId=${id}&userId=${userId}`, { cache: 'no-store' });
     if (videosRes.ok) {
       videos = await videosRes.json();
     }

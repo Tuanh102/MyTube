@@ -40,7 +40,7 @@ export default function ChannelPage({ channel, videos, user }: ChannelPageProps)
       return;
     }
 
-    const res = await toggleFollow(channel.channel_id, Number(user.id));
+    const res = await toggleFollow(channel.channel_id, user.id.toString());
     if (res.success) {
       setIsFollowed(res.isFollowed);
       setSubCount(prev => res.isFollowed ? prev + 1 : prev - 1);
@@ -117,7 +117,7 @@ export default function ChannelPage({ channel, videos, user }: ChannelPageProps)
                     : 'bg-white text-black hover:bg-zinc-200'
                 }`}
               >
-                {isFollowed ? 'Đang đăng ký' : 'Đăng ký'}
+                {isFollowed ? 'Đã theo dõi' : 'Theo dõi'}
               </button>
               <button className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-full font-bold text-sm transition-all flex items-center gap-2">
                 <Share2 size={18} />

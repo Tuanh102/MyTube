@@ -6,16 +6,21 @@ export class VideosController {
   constructor(private readonly videosService: VideosService) {}
 
   @Get('home')
-  async getHomeVideos(@Query('search') search?: string) {
-    return this.videosService.getHomeVideos(search);
+  async getHomeVideos(
+    @Query('search') search?: string,
+    @Query('userId') userId?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    return this.videosService.getHomeVideos(search, userId, categoryId);
   }
 
   @Get('studio')
   async getStudioVideos(
     @Query('channelId') channelId?: string,
     @Query('search') search?: string,
+    @Query('userId') userId?: string,
   ) {
-    return this.videosService.getStudioVideos(channelId, search);
+    return this.videosService.getStudioVideos(channelId, search, userId);
   }
 
   @Get('studio/overview')
@@ -47,13 +52,16 @@ export class VideosController {
   }
 
   @Get('shorts')
-  async getShorts() {
-    return this.videosService.getShorts();
+  async getShorts(@Query('userId') userId?: string) {
+    return this.videosService.getShorts(userId);
   }
 
   @Get(':id')
-  async getVideoDetails(@Param('id') id: string) {
-    return this.videosService.getVideoDetails(id);
+  async getVideoDetails(
+    @Param('id') id: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.videosService.getVideoDetails(id, userId);
   }
 
   @Post(':id/like')

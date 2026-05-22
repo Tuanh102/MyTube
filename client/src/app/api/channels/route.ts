@@ -7,18 +7,20 @@ import { mkdir } from "fs/promises";
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const res = await fetch(`http://localhost:5000/channels?userId=${session.user.id}`);
+    const res = await fetch(`http://127.0.0.1:5000/channels?userId=${user.id}`);
     const data = await res.json();
     return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
         let avatarUrl = '/assets/img/avata.jpg'; // Default
         let bannerUrl = ''; // Default empty
 
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
         await mkdir(uploadDir, { recursive: true });
 
         if (avatarFile) {
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
             bannerUrl = `/uploads/${filename}`;
         }
 
-        const res = await fetch(`http://localhost:5000/channels`, {
+        const res = await fetch(`http://127.0.0.1:5000/channels`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
                 description: description,
                 avatar_url: avatarUrl,
                 banner_url: bannerUrl,
-                user: session.user.id
+                user: user.id
             })
         });
 

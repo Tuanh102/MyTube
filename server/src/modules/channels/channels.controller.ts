@@ -32,4 +32,9 @@ export class ChannelsController {
   async delete(@Param('id') id: string) {
     return this.channelsService.delete(id);
   }
+
+  @Post(':id/follow')
+  async toggleFollow(@Param('id') id: string, @Body() body: { userId: string }) {
+    return this.channelsService.toggleFollow(id, body.userId);
+  }
 }

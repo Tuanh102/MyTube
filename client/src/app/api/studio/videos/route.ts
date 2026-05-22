@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = session?.user as any;
+    if (!user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,12 +20,12 @@ export async function GET(req: Request) {
         // and then get videos for all of them. 
         // For simplicity, let's just call the NestJS studio endpoint which we can enhance.
         
-        let url = `http://localhost:5000/videos/studio?search=${search}`;
+        let url = `http://127.0.0.1:5000/videos/studio?search=${search}&userId=${user.id}`;
         if (channelId && channelId !== 'all') {
             url += `&channelId=${channelId}`;
         } else {
             // Get all channels of user first
-            const channelsRes = await fetch(`http://localhost:5000/channels?userId=${session.user.id}`);
+            const channelsRes = await fetch(`http://127.0.0.1:5000/channels?userId=${user.id}`);
             const channels = await channelsRes.json();
             const channelIds = channels.map((c: any) => c._id).join(',');
             if (channelIds) {

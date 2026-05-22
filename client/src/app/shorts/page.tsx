@@ -9,9 +9,11 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const session = await getServerSession(authOptions);
+  const user = session?.user as any;
+  const userId = user?.id || "";
   let shorts: any[] = [];
   try {
-    const res = await fetch(`http://127.0.0.1:5000/videos/shorts`, { cache: 'no-store' });
+    const res = await fetch(`http://127.0.0.1:5000/videos/shorts${userId ? `?userId=${userId}` : ''}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       shorts = data.map((v: any) => ({
@@ -28,7 +30,7 @@ export default async function Page() {
         duration: v.duration || 0,
         likes_count: v.likes?.length || 0,
         dislikes_count: v.dislikes?.length || 0,
-        isLiked: session?.user?.id ? v.likes?.includes(session.user.id) : false
+        isLiked: user?.id ? v.likes?.includes(user.id) : false
       }));
     }
   } catch (error) {

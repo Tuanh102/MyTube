@@ -43,6 +43,9 @@ export default function StaffPage() {
     const [replyText, setReplyText] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
+    // States cho Video Reports
+    const [reports, setReports] = useState<any[]>([]);
+
     useEffect(() => {
         const staffData = localStorage.getItem('staff_token');
         if (!staffData || staffData === "undefined") {
@@ -52,12 +55,13 @@ export default function StaffPage() {
             fetchStats();
             fetchTickets();
             fetchPendingVideos();
+            fetchReports();
         }
     }, [router]);
 
     const fetchStats = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/admin/stats');
+            const res = await fetch('http://127.0.0.1:5000/api/admin/stats');
             const data = await res.json();
             if (res.ok) {
                 setStats(prev => ({
@@ -73,7 +77,7 @@ export default function StaffPage() {
 
     const fetchPendingVideos = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/admin/pending-videos');
+            const res = await fetch('http://127.0.0.1:5000/api/admin/pending-videos');
             if (res.ok) {
                 const data = await res.json();
                 setPendingVideos(data);
@@ -87,7 +91,7 @@ export default function StaffPage() {
     const handleModeration = async (videoId: string, action: 'approve' | 'reject') => {
         setIsActionLoading(videoId);
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/${action}-video/${videoId}`, {
+            const res = await fetch(`http://127.0.0.1:5000/api/admin/${action}-video/${videoId}`, {
                 method: 'POST'
             });
             if (res.ok) {
@@ -102,9 +106,41 @@ export default function StaffPage() {
         }
     };
 
+    const fetchReports = async () => {
+        try {
+            const res = await fetch('http://127.0.0.1:5000/reports');
+            if (res.ok) {
+                const data = await res.json();
+                setReports(data);
+            }
+        } catch (error) {
+            console.error('Lỗi lấy báo cáo video:', error);
+        }
+    };
+
+    const handleResolveReport = async (reportId: string, action: 'DELETE_VIDEO' | 'KEEP_VIDEO') => {
+        setIsActionLoading(reportId);
+        try {
+            const res = await fetch(`http://127.0.0.1:5000/reports/${reportId}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            if (res.ok) {
+                fetchReports();
+                fetchStats();
+                alert(action === 'DELETE_VIDEO' ? 'Đã xóa video vi phạm!' : 'Đã giữ lại video và đóng báo cáo!');
+            }
+        } catch (error) {
+            alert('Lỗi khi thực hiện thao tác');
+        } finally {
+            setIsActionLoading(null);
+        }
+    };
+
     const fetchTickets = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/support/all-tickets');
+            const res = await fetch('http://127.0.0.1:5000/api/support/all-tickets');
             if (res.ok) setTickets(await res.json());
         } catch (error) {
             console.error('Lỗi lấy tickets:', error);
@@ -115,7 +151,7 @@ export default function StaffPage() {
         if (!replyText.trim() || !selectedTicket) return;
         setIsSubmittingReply(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/support/message/${selectedTicket._id}`, {
+            const res = await fetch(`http://127.0.0.1:5000/api/support/message/${selectedTicket._id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -142,7 +178,7 @@ export default function StaffPage() {
         setSelectedTicket(ticket);
         if (!ticket.isReadByStaff) {
             try {
-                await fetch(`http://localhost:5000/api/support/mark-read/${ticket._id}`, { method: 'POST' });
+                await fetch(`http://127.0.0.1:5000/api/support/mark-read/${ticket._id}`, { method: 'POST' });
                 setTickets(prev => prev.map(t => t._id === ticket._id ? { ...t, isReadByStaff: true } : t));
             } catch (error) {
                 console.error(error);
@@ -199,6 +235,13 @@ export default function StaffPage() {
                     >
                         <MessageSquare size={18} className={activeTab === 'support' ? 'text-red-500' : ''} />
                         <span className="hidden lg:block font-medium">Hỗ trợ khách hàng</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('reports')}
+                        className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${activeTab === 'reports' ? 'bg-white/[0.03] border border-white/5 text-white' : 'text-white/40 hover:text-white hover:bg-white/[0.02]'}`}
+                    >
+                        <Flag size={18} className={activeTab === 'reports' ? 'text-red-500' : ''} />
+                        <span className="hidden lg:block font-medium">Báo cáo Video</span>
                     </button>
                 </nav>
 
@@ -279,7 +322,7 @@ export default function StaffPage() {
                                 {pendingVideos.map((video) => (
                                     <div key={video._id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex items-center gap-8 hover:border-white/10 transition-all group">
                                         <div className="w-48 aspect-video bg-black rounded-xl overflow-hidden relative flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
-                                            <img src={`http://localhost:5000${video.thumbnail_url}`} className="w-full h-full object-cover opacity-80" alt="" />
+                                            <img src={`http://127.0.0.1:5000${video.thumbnail_url}`} className="w-full h-full object-cover opacity-80" alt="" />
                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
                                                     <Play size={20} fill="white" />
@@ -420,6 +463,68 @@ export default function StaffPage() {
                                         <MessageSquare size={48} className="text-white/5 mb-6" />
                                         <h3 className="text-white/40 font-bold">Chọn một yêu cầu để xem chi tiết</h3>
                                         <p className="text-white/10 text-xs mt-2 italic">Các yêu cầu từ người dùng MyTube sẽ xuất hiện tại đây.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'reports' && (
+                        <div className="animate-in fade-in duration-500">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-2xl font-bold italic uppercase">Báo cáo từ người dùng</h2>
+                                <span className="bg-white/5 px-4 py-2 rounded-lg text-xs font-bold text-white/40">
+                                    {reports.length} Báo cáo chưa xử lý
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {reports.map((report) => (
+                                    <div key={report._id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-6 hover:border-white/10 transition-all group animate-in slide-in-from-bottom-2 duration-300">
+                                        <div className="w-48 aspect-video bg-black rounded-xl overflow-hidden relative flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
+                                            {report.videoThumbnail ? (
+                                                <img src={report.videoThumbnail.startsWith('http') ? report.videoThumbnail : `http://127.0.0.1:5000${report.videoThumbnail}`} className="w-full h-full object-cover opacity-80" alt="" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
+                                                    <Flag size={24} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 uppercase tracking-wider">
+                                                    {report.reason}
+                                                </span>
+                                                <span className="text-[10px] text-white/20 uppercase tracking-widest">{new Date(report.createdAt).toLocaleString('vi-VN')}</span>
+                                            </div>
+                                            <h3 className="text-lg font-bold truncate mb-1 text-white">{report.videoTitle || 'Video không khả dụng'}</h3>
+                                            <p className="text-xs text-white/40 mb-2">Người báo cáo: <span className="text-white/60 font-semibold">{report.reporter?.name || report.reporter?.username || 'Ẩn danh'}</span></p>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 self-end md:self-center">
+                                            <button 
+                                                onClick={() => handleResolveReport(report._id, 'KEEP_VIDEO')}
+                                                disabled={isActionLoading === report._id}
+                                                className="px-5 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2"
+                                            >
+                                                <ShieldCheck size={16} /> Giữ lại video
+                                            </button>
+                                            <button 
+                                                onClick={() => handleResolveReport(report._id, 'DELETE_VIDEO')}
+                                                disabled={isActionLoading === report._id}
+                                                className="px-5 py-3 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 flex items-center gap-2"
+                                            >
+                                                <XCircle size={16} /> Xóa video
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {reports.length === 0 && (
+                                    <div className="py-24 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
+                                        <ShieldCheck size={48} className="text-white/5 mx-auto mb-4 animate-pulse" />
+                                        <p className="text-white/20 italic">Tuyệt vời! Không có báo cáo vi phạm nào chưa xử lý.</p>
                                     </div>
                                 )}
                             </div>

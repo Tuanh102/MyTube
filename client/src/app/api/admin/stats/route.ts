@@ -5,7 +5,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 export async function GET() {
     // Chúng ta có thể kiểm tra session admin ở đây nếu cần bảo mật hơn
     try {
-        const res = await fetch('http://localhost:5000/api/admin/stats', {
+        const res = await fetch('http://127.0.0.1:5000/api/admin/stats', {
             cache: 'no-store'
         });
         const data = await res.json();

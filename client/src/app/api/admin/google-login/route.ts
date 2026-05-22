@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        console.log('Proxy đang gọi sang NestJS tại http://localhost:5000/admin/google-login');
+        console.log('Proxy đang gọi sang NestJS tại http://127.0.0.1:5000/admin/google-login');
         
         // Thử gọi qua localhost thay vì 127.0.0.1
-        const res = await fetch('http://localhost:5000/api/admin/google-login', {
+        const res = await fetch('http://127.0.0.1:5000/api/admin/google-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
