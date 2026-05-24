@@ -14,6 +14,8 @@ export default function PaymentSuccess() {
     const videoId = searchParams.get('videoId');
     const orderId = searchParams.get('orderId');
     const isPremium = videoId === 'PREMIUM_MONTH' || videoId === 'PREMIUM_6MONTHS' || videoId === 'PREMIUM_YEAR';
+    const isDeposit = videoId?.startsWith('DEPOSIT_') || false;
+    const depositAmount = isDeposit ? videoId.split('_')[1] : '0';
  
     useEffect(() => {
         const user = session?.user as any;
@@ -28,7 +30,7 @@ export default function PaymentSuccess() {
                 });
  
                 if (res.ok) {
-                    // Cập nhật session NextAuth ngay lập tức để đồng bộ danh sách purchased_videos & premium!
+                    // Cập nhật session NextAuth ngay lập tức để đồng bộ danh sách purchased_videos, premium & balance!
                     try {
                         const profileRes = await fetch(`/api/users/profile/${user.id}`);
                         if (profileRes.ok) {
@@ -38,10 +40,11 @@ export default function PaymentSuccess() {
                                 user: {
                                     ...session?.user,
                                     is_premium: freshUser.is_premium || false,
-                                    purchased_videos: freshUser.purchased_videos || []
+                                    purchased_videos: freshUser.purchased_videos || [],
+                                    balance: freshUser.balance || 0
                                 }
                             });
-                            console.log('[PAYMENT SUCCESS] Đã cập nhật session với profile mới nhất từ DB:', freshUser.purchased_videos);
+                            console.log('[PAYMENT SUCCESS] Đã cập nhật session với profile mới nhất từ DB:', freshUser);
                         }
                     } catch (syncErr) {
                         console.error('[PAYMENT SUCCESS] Không thể đồng bộ session:', syncErr);
@@ -51,7 +54,9 @@ export default function PaymentSuccess() {
                     
                     // Tự động chuyển hướng
                     setTimeout(() => {
-                        if (isPremium) {
+                        if (isDeposit) {
+                            router.push('/studio?tab=revenue');
+                        } else if (isPremium) {
                             router.push('/');
                         } else {
                             router.push(`/watch/${videoId}`);
@@ -69,17 +74,19 @@ export default function PaymentSuccess() {
         if (user?.id && videoId) {
             verifyPayment();
         }
-    }, [session, videoId, router, isPremium]);
+    }, [session, videoId, router, isPremium, isDeposit, orderId]);
  
     return (
         <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-[#282828] rounded-3xl p-8 text-center shadow-2xl border border-white/10">
+            <div className="max-w-md w-full bg-[#282828] rounded-3xl p-8 text-center shadow-2xl border border-white/10 text-white">
                 {status === 'loading' && (
                     <div className="space-y-4">
                         <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto" />
                         <h1 className="text-2xl font-bold text-white">Đang xác thực giao dịch...</h1>
                         <p className="text-white/60">
-                            {isPremium 
+                            {isDeposit
+                              ? `Vui lòng chờ trong giây lát, chúng tôi đang xử lý cộng ${Number(depositAmount).toLocaleString('vi-VN')} VNĐ vào ví cho bạn.`
+                              : isPremium 
                               ? "Vui lòng chờ trong giây lát, chúng tôi đang kích hoạt quyền lợi Premium cho bạn."
                               : "Vui lòng chờ trong giây lát, chúng tôi đang mở khóa video cho bạn."
                             }
@@ -91,20 +98,30 @@ export default function PaymentSuccess() {
                     <div className="space-y-4 animate-in fade-in zoom-in duration-500">
                         <CheckCircle className="w-20 h-20 text-[#00b082] mx-auto animate-bounce" />
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 bg-clip-text text-transparent">
-                            {isPremium ? "Premium Đã Sẵn Sàng!" : "Thanh toán thành công!"}
+                            {isDeposit 
+                              ? "Nạp Tiền Thành Công!" 
+                              : isPremium 
+                              ? "Premium Đã Sẵn Sàng!" 
+                              : "Thanh toán thành công!"}
                         </h1>
                         <p className="text-white/80 text-base leading-relaxed">
-                            {isPremium 
+                            {isDeposit
+                              ? `Đã cộng thành công ${Number(depositAmount).toLocaleString('vi-VN')} VNĐ vào ví số dư ảo của bạn.`
+                              : isPremium 
                               ? "Chúc mừng bạn! Tài khoản đã được nâng cấp lên MyTube Premium thành công. Toàn bộ quảng cáo đã bị loại bỏ!"
                               : "Cảm ơn bạn đã ủng hộ tác giả. Video đã được mở khóa và sẵn sàng thưởng thức."
                             }
                         </p>
                         <div className="pt-6">
                             <button 
-                                onClick={() => router.push(isPremium ? '/' : `/watch/${videoId}`)}
+                                onClick={() => router.push(isDeposit ? '/studio?tab=revenue' : (isPremium ? '/' : `/watch/${videoId}`))}
                                 className="w-full bg-white text-black py-3.5 rounded-xl font-bold hover:bg-white/90 transition shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                             >
-                                {isPremium ? "Khám phá MyTube Premium ngay" : "Xem video ngay"}
+                                {isDeposit 
+                                  ? "Quay lại Studio ngay" 
+                                  : isPremium 
+                                  ? "Khám phá MyTube Premium ngay" 
+                                  : "Xem video ngay"}
                             </button>
                         </div>
                     </div>

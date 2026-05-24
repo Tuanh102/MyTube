@@ -8,9 +8,13 @@ export class ReportsController {
   @Post()
   async createReport(
     @Body('videoId') videoId: string,
+    @Body('channelId') channelId: string,
     @Body('userId') userId: string,
     @Body('reason') reason: string
   ) {
+    if (channelId) {
+      return this.reportsService.createChannelReport(channelId, userId, reason);
+    }
     return this.reportsService.createReport(videoId, userId, reason);
   }
 
@@ -27,7 +31,7 @@ export class ReportsController {
   @Post(':id/resolve')
   async resolveReport(
     @Param('id') id: string,
-    @Body('action') action: 'DELETE_VIDEO' | 'KEEP_VIDEO'
+    @Body('action') action: 'DELETE_VIDEO' | 'KEEP_VIDEO' | 'DELETE_CHANNEL' | 'KEEP_CHANNEL'
   ) {
     return this.reportsService.resolveReport(id, action);
   }

@@ -9,17 +9,18 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AdminService {
-  // Danh sách Email được phép làm Admin (Bạn có thể chuyển cái này vào .env)
-  private readonly adminEmails = [
-    'nguyenlekhahai1102@gmail.com',
-    'ttattatta096@gmail.com',
-    'admin@mytube.com'
-  ];
+  // Map in-memory để lưu mã OTP đang hoạt động: phone -> { otp, expiresAt }
+  private activeOtps = new Map<string, { otp: string; expiresAt: number }>();
 
-  private readonly staffEmails = [
-    'staff1@mytube.com',
-    'staff@example.com'
-  ];
+  // Chuẩn hóa số điện thoại: cho phép 0325... hoặc +84325... tự chuyển đổi tương thích
+  private normalizePhone(phone: string): string {
+    if (!phone) return '';
+    let clean = phone.trim().replace(/\s+/g, '');
+    if (clean.startsWith('0')) {
+      clean = '+84' + clean.substring(1);
+    }
+    return clean;
+  }
 
   constructor(
     @InjectModel(Admin.name) private adminModel: Model<AdminDocument>,
@@ -29,34 +30,118 @@ export class AdminService {
     private configService: ConfigService,
   ) {}
 
-  async googleLogin(googleData: any) {
-    const { email, name, sub, picture } = googleData;
+  async requestOtp(phone: string) {
+    console.log('--- SYSTEM LOGIN REQUEST OTP ---');
+    const superAdminPhone = this.configService.get<string>('SUPER_ADMIN_PHONE') || '+84325088531';
     
-    console.log('--- SYSTEM LOGIN ATTEMPT ---');
+    const normalizedInput = this.normalizePhone(phone);
+    const normalizedSuper = this.normalizePhone(superAdminPhone);
     
-    const isAdmin = this.adminEmails.some(e => e.toLowerCase() === email?.toLowerCase());
-    const isStaff = this.staffEmails.some(e => e.toLowerCase() === email?.toLowerCase());
-
-    if (!isAdmin && !isStaff) {
-      throw new UnauthorizedException('Email này không có quyền truy cập hệ thống quản trị/nhân viên');
+    if (!normalizedInput || normalizedInput !== normalizedSuper) {
+      throw new UnauthorizedException('Số điện thoại này không có quyền quản trị/nhân viên');
     }
 
-    let admin = await this.adminModel.findOne({ email });
+    // Tạo mã OTP 6 số ngẫu nhiên
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // Hạn 5 phút
 
+    this.activeOtps.set(normalizedInput, { otp, expiresAt });
+
+    // 1. In ra server log để phòng ngừa lỗi mạng hoặc test nhanh free 100%
+    console.log(`\n======================================================`);
+    console.log(`🔑 [OTP SYSTEM] MÃ ĐĂNG NHẬP ADMIN/STAFF: ${otp}`);
+    console.log(`Số điện thoại: ${phone} (Chuẩn hóa: ${normalizedInput})`);
+    console.log(`Hiệu lực: 5 phút`);
+    console.log(`======================================================\n`);
+
+    // 2. Gửi qua Discord Bot nếu có cấu hình
+    const discordBotToken = this.configService.get<string>('DISCORD_BOT_TOKEN');
+    const discordChannelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
+
+    if (discordBotToken && discordChannelId) {
+      try {
+        const cleanToken = discordBotToken.replace(/"/g, '').trim();
+        const cleanChannel = discordChannelId.replace(/"/g, '').trim();
+        
+        const discordUrl = `https://discord.com/api/v10/channels/${cleanChannel}/messages`;
+        const res = await fetch(discordUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bot ${cleanToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: `🔑 **MÃ OTP ĐĂNG NHẬP MYTUBE**\n\n• **Số điện thoại:** \`${phone}\` (\`${normalizedInput}\`)\n• **Mã OTP:** \`${otp}\`\n• **Hiệu lực:** 5 phút\n\n_Vui lòng không chia sẻ mã này cho bất kỳ ai!_`,
+          }),
+        });
+
+        if (!res.ok) {
+          const errMsg = await res.text();
+          console.error('[DISCORD ERROR] Lỗi gửi OTP qua Discord:', errMsg);
+        } else {
+          console.log('[DISCORD SUCCESS] Đã gửi OTP qua Discord Channel:', cleanChannel);
+        }
+      } catch (err) {
+        console.error('[DISCORD EXCEPTION] Không thể gửi OTP qua Discord:', err);
+      }
+    }
+
+    return { success: true, message: 'Mã OTP đã được gửi thành công!' };
+  }
+
+  async verifyOtp(phone: string, otp: string, role: 'ADMIN' | 'STAFF') {
+    console.log(`--- SYSTEM VERIFY OTP ATTEMPT: ${phone}, role: ${role} ---`);
+    const superAdminPhone = this.configService.get<string>('SUPER_ADMIN_PHONE') || '+84325088531';
+    
+    const normalizedInput = this.normalizePhone(phone);
+    const normalizedSuper = this.normalizePhone(superAdminPhone);
+
+    if (!normalizedInput || normalizedInput !== normalizedSuper) {
+      throw new UnauthorizedException('Số điện thoại này không có quyền quản trị/nhân viên');
+    }
+
+    const savedOtpRecord = this.activeOtps.get(normalizedInput);
+    if (!savedOtpRecord) {
+      throw new UnauthorizedException('Chưa yêu cầu mã OTP hoặc mã đã hết hạn');
+    }
+
+    if (savedOtpRecord.otp !== otp) {
+      throw new UnauthorizedException('Mã OTP không chính xác');
+    }
+
+    if (Date.now() > savedOtpRecord.expiresAt) {
+      this.activeOtps.delete(normalizedInput);
+      throw new UnauthorizedException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới');
+    }
+
+    // Xác thực thành công -> Xóa OTP khỏi Map
+    this.activeOtps.delete(normalizedInput);
+
+
+    // Tạo / Đồng bộ Admin & Staff trong DB
+    const email = role === 'ADMIN' ? 'admin@mytube.com' : 'staff@mytube.com';
+    const name = role === 'ADMIN' ? 'Super Admin' : 'Staff Moderator';
+
+    let admin = await this.adminModel.findOne({ email });
     if (!admin) {
       admin = await new this.adminModel({
         email,
         name,
-        googleId: sub,
-        avatar_url: picture,
-        role: isAdmin ? 'ADMIN' : 'STAFF'
+        role,
+        avatar_url: role === 'ADMIN' ? '/assets/img/default-admin-avatar.jpg' : '/assets/img/avata.jpg',
+        isActive: true,
       }).save();
+    } else {
+      // Đảm bảo cập nhật đúng role khi login
+      if (admin.role !== role) {
+        admin.role = role;
+        await admin.save();
+      }
     }
 
-    // Ở đây bạn có thể tạo JWT Token riêng cho Admin
     return {
       admin,
-      message: 'Admin login success'
+      message: 'OTP verification & login success'
     };
   }
 

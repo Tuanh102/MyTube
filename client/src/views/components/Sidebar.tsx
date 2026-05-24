@@ -156,7 +156,7 @@ export default function Sidebar({ followedChannels = [], user }: SidebarProps) {
           )}
 
           <div className="px-4 py-2 text-[11px] text-white/30 space-y-4">
-            <p>Dự án MyTube Next.js Migration. @ 2026 MyTube. All rights reserved.</p>
+            <p>@ 2026 MyTube. All rights reserved.</p>
           </div>
         </div>
       </aside>

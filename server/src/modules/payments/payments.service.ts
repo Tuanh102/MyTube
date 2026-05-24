@@ -226,6 +226,35 @@ export class PaymentsService {
 
 
   async addPurchasedVideo(userId: string, videoId: string, shouldIncBalance: boolean = false, paidAmount?: number) {
+    // Xử lý đặc biệt nếu đây là giao dịch nạp tiền (Deposit)
+    if (videoId && videoId.startsWith('DEPOSIT_')) {
+      const parts = videoId.split('_');
+      const amountStr = parts[1];
+      let depositAmount = parseInt(amountStr, 10);
+      if (isNaN(depositAmount) || depositAmount <= 0) {
+        depositAmount = paidAmount || 0;
+      }
+
+      // 1. Tăng balance của User nạp tiền
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        userId,
+        { $inc: { balance: depositAmount } },
+        { new: true }
+      );
+      console.log(`[PAYOS DEPOSIT] Đã cộng ${depositAmount} VNĐ vào ví của User: ${userId}`);
+
+      // 2. Cộng doanh thu thực vào ví của Admin MyTube
+      if (shouldIncBalance) {
+        await this.adminModel.findOneAndUpdate(
+          { role: 'ADMIN' },
+          { $inc: { balance: depositAmount } }
+        );
+        console.log(`[PAYOS DEPOSIT] Đã chuyển ${depositAmount} VNĐ vào ví Admin thành công.`);
+      }
+      
+      return updatedUser;
+    }
+
     // Xử lý đặc biệt nếu đây là giao dịch nâng cấp tài khoản Premium
     if (videoId === 'PREMIUM_MONTH' || videoId === 'PREMIUM_6MONTHS' || videoId === 'PREMIUM_YEAR') {
       let premiumPrice = 25000;

@@ -1,7 +1,7 @@
 import ShortsPage from "@/views/pages/ShortsPage";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 
 export const metadata: Metadata = {
   title: "Shorts - MyTube",

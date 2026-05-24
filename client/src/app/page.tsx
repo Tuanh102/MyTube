@@ -3,7 +3,8 @@ import HomeBanner from "@/views/components/HomeBanner";
 // Legacy imports removed
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "./api/auth/[...nextauth]/options";
+import { Radio, Users } from 'lucide-react';
 
 export default async function Home({
   searchParams,
@@ -49,6 +50,40 @@ export default async function Home({
     console.error("Failed to fetch videos from API", error);
   }
 
+  // Fetch active live streams
+  let activeLiveStreams: any[] = [];
+  try {
+    const liveRes = await fetch('http://127.0.0.1:5000/live/active', { cache: 'no-store' });
+    if (liveRes.ok) {
+      activeLiveStreams = await liveRes.json();
+    }
+  } catch (error) {
+    console.error("Failed to fetch active live streams", error);
+  }
+
+  // Map active live streams to match VideoCard schema
+  const liveVideoCards = activeLiveStreams.map((stream: any) => ({
+    video_id: stream._id,
+    title: stream.title,
+    thumbnail_url: stream.thumbnailUrl || 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop',
+    channel_name: stream.streamerName,
+    channel_avatar: stream.streamerAvatar || '/assets/img/avata.jpg',
+    view_count: stream.viewerCount || 0,
+    created_at: stream.createdAt,
+    isLive: true
+  }));
+
+  // Filter live streams if search query is present
+  const filteredLiveVideoCards = searchQuery 
+    ? liveVideoCards.filter((stream: any) => 
+        stream.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        stream.channel_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : liveVideoCards;
+
+  // Merge live streams (at the beginning) with normal videos
+  const allVideos = [...filteredLiveVideoCards, ...videos];
+
   const dbCategories: any[] = [];
 
   const categories = [
@@ -83,15 +118,15 @@ export default async function Home({
       {!categoryId && !searchQuery && <HomeBanner />}
 
       {/* Video Grid */}
-      {videos.length > 0 ? (
+      {allVideos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-8">
-          {videos.map((video) => (
+          {allVideos.map((video) => (
             <VideoCard key={video.video_id} video={video} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-white/50">
-          <p className="text-lg">Không tìm thấy video nào.</p>
+          <p className="text-lg">Không tìm thấy video hay phiên Live nào.</p>
           {(searchQuery || categoryId) && <p className="text-sm">Thử với từ khóa hoặc danh mục khác xem sao!</p>}
         </div>
       )}

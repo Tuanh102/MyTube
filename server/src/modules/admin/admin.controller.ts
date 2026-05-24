@@ -11,10 +11,18 @@ export class AdminController {
     private readonly paymentsService: PaymentsService
   ) {}
 
-  @Post('google-login')
-  async googleLogin(@Body() body: any) {
-    console.log('Admin Login Request received for email:', body?.email);
-    return this.adminService.googleLogin(body);
+  @Post('request-otp')
+  async requestOtp(@Body() body: { phone: string }) {
+    return this.adminService.requestOtp(body.phone);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() body: { phone: string; otp: string; role: 'ADMIN' | 'STAFF' }) {
+    const { phone, otp, role } = body;
+    if (!phone || !otp || !role) {
+      throw new UnauthorizedException('Thiếu thông tin đăng nhập');
+    }
+    return this.adminService.verifyOtp(phone, otp, role);
   }
 
   @Get('stats')

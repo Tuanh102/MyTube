@@ -24,6 +24,7 @@ interface VideoCardProps {
     is_free?: boolean;
     channel_user_id?: string | number;
     user_id?: string | number;
+    isLive?: boolean;
   };
 }
 
@@ -118,14 +119,23 @@ export default function VideoCard({ video }: VideoCardProps) {
     }
   };
 
-  // Đánh chặn click video trả phí đối với Guest chưa đăng nhập
-  const handleVideoClick = (e: React.MouseEvent) => {
-    if (!session?.user && video.is_free === false) {
-      e.preventDefault(); // Chặn chuyển hướng của Link
-      const confirmLogin = window.confirm("Đây là video trả phí cao cấp. Bạn cần đăng nhập tài khoản để tiến hành mua bản quyền và thưởng thức video này. Click OK để đăng nhập ngay!");
-      if (confirmLogin) {
-        setIsLoginDropdownOpen(true); // Mở popover đăng nhập ở Header
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn mượt mà lên đầu trang
+  // Đánh chặn click video trả phí hoặc live stream đối với Guest chưa đăng nhập
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (!session?.user) {
+      if (video.isLive) {
+        e.preventDefault(); // Chặn chuyển hướng của Link
+        const confirmLogin = window.confirm("Đây là phiên phát sóng trực tiếp (Live Stream). Bạn cần đăng nhập tài khoản để vào xem và tương tác trực tiếp. Click OK để đăng nhập ngay!");
+        if (confirmLogin) {
+          setIsLoginDropdownOpen(true); // Mở popover đăng nhập ở Header
+          window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn mượt mà lên đầu trang
+        }
+      } else if (video.is_free === false) {
+        e.preventDefault(); // Chặn chuyển hướng của Link
+        const confirmLogin = window.confirm("Đây là video trả phí cao cấp. Bạn cần đăng nhập tài khoản để tiến hành mua bản quyền và thưởng thức video này. Click OK để đăng nhập ngay!");
+        if (confirmLogin) {
+          setIsLoginDropdownOpen(true); // Mở popover đăng nhập ở Header
+          window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn mượt mà lên đầu trang
+        }
       }
     }
   };
@@ -151,17 +161,19 @@ export default function VideoCard({ video }: VideoCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-[#121212]">
-        <Link href={`/watch/${video.video_id}`} onClick={handleVideoClick}>
+        <Link href={video.isLive ? `/live/${video.video_id}` : `/watch/${video.video_id}`} onClick={handleCardClick}>
           <img 
-            src={getUploadUrl(video.thumbnail_url)} 
+            src={video.isLive ? video.thumbnail_url : getUploadUrl(video.thumbnail_url)} 
             alt={video.title}
             className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${showVideo ? 'opacity-0' : 'opacity-100'}`}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop';
+              (e.target as HTMLImageElement).src = video.isLive 
+                ? 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1000&auto=format&fit=crop'
+                : 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop';
             }}
           />
           
-          {showVideo && video.video_url && (video.is_free !== false || hasPermission) && (
+          {showVideo && video.video_url && !video.isLive && (video.is_free !== false || hasPermission) && (
             <video
               ref={videoRef}
               src={getUploadUrl(video.video_url)}
@@ -173,11 +185,17 @@ export default function VideoCard({ video }: VideoCardProps) {
             />
           )}
 
-          <div className="absolute bottom-2 right-2 bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold z-10">
-            {formatDuration(video.duration || 0)}
-          </div>
+          {video.isLive ? (
+            <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded flex items-center gap-1 shadow-md shadow-red-600/30">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" /> LIVE
+            </span>
+          ) : (
+            <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold z-10" style={{ color: '#ffffff', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
+              {formatDuration(video.duration || 0)}
+            </div>
+          )}
 
-          {video.is_free === false && !hasPermission && (
+          {video.is_free === false && !video.isLive && !hasPermission && (
             <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black z-10 shadow-lg flex items-center gap-1 animate-pulse">
               <div className="w-1.5 h-1.5 bg-white rounded-full" />
               TRẢ PHÍ
@@ -188,10 +206,10 @@ export default function VideoCard({ video }: VideoCardProps) {
 
       <div className="flex gap-3 relative">
         <div className="flex-shrink-0">
-          <Link href={`/channel/${video.channel_id || '#'}`}>
-            <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 ring-1 ring-transparent hover:ring-red-500 transition-all">
+          {video.isLive ? (
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 border border-red-500/30">
               <img 
-                src={getUploadUrl(video.channel_avatar, '/assets/img/avata.jpg')} 
+                src={video.channel_avatar || '/assets/img/avata.jpg'} 
                 className="w-full h-full object-cover"
                 alt=""
                 onError={(e) => {
@@ -199,72 +217,99 @@ export default function VideoCard({ video }: VideoCardProps) {
                 }}
               />
             </div>
-          </Link>
+          ) : (
+            <Link href={`/channel/${video.channel_id || '#'}`}>
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 ring-1 ring-transparent hover:ring-red-500 transition-all">
+                <img 
+                  src={getUploadUrl(video.channel_avatar, '/assets/img/avata.jpg')} 
+                  className="w-full h-full object-cover"
+                  alt=""
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/assets/img/avata.jpg';
+                  }}
+                />
+              </div>
+            </Link>
+          )}
         </div>
 
         <div className="flex-1 pr-4 min-w-0">
-          <Link href={`/watch/${video.video_id}`} onClick={handleVideoClick}>
+          <Link href={video.isLive ? `/live/${video.video_id}` : `/watch/${video.video_id}`} onClick={handleCardClick}>
             <h3 className="text-sm font-semibold line-clamp-2 text-white mb-1 group-hover:text-red-500 transition-colors">
               {video.title}
             </h3>
           </Link>
           
-          <Link href={`/channel/${video.channel_id || '#'}`}>
-            <p className="text-xs text-white/60 hover:text-white transition-colors truncate">
-              {video.channel_name || 'Kênh hệ thống'}
+          {video.isLive ? (
+            <p className="text-xs text-white/60 truncate">
+              {video.channel_name || 'Người phát sóng'}
             </p>
-          </Link>
+          ) : (
+            <Link href={`/channel/${video.channel_id || '#'}`}>
+              <p className="text-xs text-white/60 hover:text-white transition-colors truncate">
+                {video.channel_name || 'Kênh hệ thống'}
+              </p>
+            </Link>
+          )}
           
           <p className="text-xs text-white/60 mt-1">
-            {video.view_count.toLocaleString('vi-VN')} lượt xem • {video.created_at ? new Date(video.created_at).toLocaleDateString('vi-VN') : '2 ngày trước'}
+            {video.isLive ? (
+              <span className="flex items-center gap-1.5 text-red-500 font-bold animate-pulse text-[10px]">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" /> {video.view_count.toLocaleString('vi-VN')} đang xem
+              </span>
+            ) : (
+              `${video.view_count.toLocaleString('vi-VN')} lượt xem • ${video.created_at ? new Date(video.created_at).toLocaleDateString('vi-VN') : '2 ngày trước'}`
+            )}
           </p>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsDropdownOpen(!isDropdownOpen);
-            }}
-            className="text-white/40 hover:text-white self-start pt-1 active:scale-95 transition"
-          >
-            <MoreVertical size={18} />
-          </button>
-          
-          {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-40 bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl py-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              {isOwner ? (
-                <Link
-                  href={`/studio?tab=videos&search=${encodeURIComponent(video.title)}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-xs text-red-500 hover:bg-white/5 hover:text-red-400 flex items-center gap-2 transition font-medium"
-                >
-                  <Trash2 size={14} />
-                  <span>Xóa video</span>
-                </Link>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDropdownOpen(false);
-                    if (ensureUserLoggedIn('Báo cáo video')) {
-                      setIsReportModalOpen(true);
-                    }
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-xs text-red-400 hover:bg-white/5 hover:text-red-300 flex items-center gap-2 transition font-medium"
-                >
-                  <Flag size={14} />
-                  <span>Báo cáo video</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {!video.isLive && (
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
+              className="text-white/40 hover:text-white self-start pt-1 active:scale-95 transition"
+            >
+              <MoreVertical size={18} />
+            </button>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 bottom-full mb-1.5 w-40 bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl py-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                {isOwner ? (
+                  <Link
+                    href={`/studio?tab=videos&search=${encodeURIComponent(video.title)}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs text-red-500 hover:bg-white/5 hover:text-red-400 flex items-center gap-2 transition font-medium"
+                  >
+                    <Trash2 size={14} />
+                    <span>Xóa video</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDropdownOpen(false);
+                      if (ensureUserLoggedIn('Báo cáo video')) {
+                        setIsReportModalOpen(true);
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-xs text-red-400 hover:bg-white/5 hover:text-red-300 flex items-center gap-2 transition font-medium"
+                  >
+                    <Flag size={14} />
+                    <span>Báo cáo video</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Premium Glassmorphic Report Modal */}

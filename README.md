@@ -89,8 +89,3 @@ Mở trình duyệt web của bạn và truy cập trực tiếp vào đường 
 ```text
 http://localhost:3000
 ```
-
-> [!TIP]
-> * **Để đăng nhập quyền Admin/VIP đã seed sẵn:**
->   * **Tài khoản:** Nhấp chọn Đăng nhập ➡️ Sử dụng Email đã seed: `ttattatto96@gmail.com`
->   * Hoặc bạn cũng có thể tự do nhấn Đăng ký tài khoản hoàn toàn mới để trải nghiệm đầy đủ tính năng!

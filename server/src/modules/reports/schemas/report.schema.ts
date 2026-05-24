@@ -10,13 +10,13 @@ export class VideoReport {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Video', required: false })
   video: Video;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   videoId: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   videoTitle: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   videoThumbnail: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
@@ -27,6 +27,19 @@ export class VideoReport {
 
   @Prop({ default: 'PENDING' })
   status: string; // PENDING, RESOLVED_DELETED, RESOLVED_DISMISSED
+
+  // Channel report extensions
+  @Prop({ required: false })
+  channelId: string;
+
+  @Prop({ required: false })
+  channelName: string;
+
+  @Prop({ required: false })
+  channelAvatar: string;
+
+  @Prop({ default: 'video' })
+  type: string; // 'video' | 'channel'
 }
 
 export const VideoReportSchema = SchemaFactory.createForClass(VideoReport);

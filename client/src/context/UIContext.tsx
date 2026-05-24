@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Theme = 'system' | 'light' | 'dark';
+type Theme = 'system' | 'light' | 'dark' | 'schedule';
 
 interface UIContextType {
   isSidebarOpen: boolean;
@@ -25,6 +25,15 @@ interface UIContextType {
   // Theme State
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  // Global Pre-roll Ad State
+  isAdActive: boolean;
+  setIsAdActive: (active: boolean) => void;
+  adCountdownGlobal: number;
+  setAdCountdownGlobal: (seconds: number) => void;
+  adTotalCountdownGlobal: number;
+  setAdTotalCountdownGlobal: (seconds: number) => void;
+  isAdPausedGlobal: boolean;
+  setIsAdPausedGlobal: (paused: boolean) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -37,6 +46,32 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoginDropdownOpen, setIsLoginDropdownOpen] = useState(false); // State login toàn cục
   
+  // Global Pre-roll Ad States
+  const [isAdActive, setIsAdActive] = useState(false);
+  const [adCountdownGlobal, setAdCountdownGlobal] = useState(5);
+  const [adTotalCountdownGlobal, setAdTotalCountdownGlobal] = useState(30);
+  const [isAdPausedGlobal, setIsAdPausedGlobal] = useState(false);
+
+  // Global ticking for pre-roll ad
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isAdActive && !isAdPausedGlobal) {
+      interval = setInterval(() => {
+        setAdCountdownGlobal(prev => (prev > 0 ? prev - 1 : 0));
+        setAdTotalCountdownGlobal(prev => {
+          if (prev <= 1) {
+            setIsAdActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAdActive, isAdPausedGlobal]);
+
   // Khởi tạo theme
   const [theme, setThemeState] = useState<Theme>('dark');
 
@@ -79,8 +114,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
       if (theme === 'system') {
         const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         activeTheme = systemDark ? 'dark' : 'light';
+      } else if (theme === 'schedule') {
+        const hour = new Date().getHours();
+        activeTheme = (hour >= 6 && hour < 18) ? 'light' : 'dark';
       } else {
-        activeTheme = theme;
+        activeTheme = theme as 'light' | 'dark';
       }
       
       if (activeTheme === 'light') {
@@ -94,12 +132,23 @@ export function UIProvider({ children }: { children: ReactNode }) {
 
     applyTheme();
 
+    let intervalId: any;
+    if (theme === 'schedule') {
+      intervalId = setInterval(() => {
+        applyTheme();
+      }, 60000);
+    }
+
     if (theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = () => applyTheme();
       mediaQuery.addEventListener('change', handler);
       return () => mediaQuery.removeEventListener('change', handler);
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [theme]);
 
   return (
@@ -108,7 +157,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
       isLoginDropdownOpen, setIsLoginDropdownOpen,
       activeVideo, isMiniPlayerActive, miniPlayerTime, isPlaying,
       setActiveVideo, setIsMiniPlayerActive, setMiniPlayerTime, setIsPlaying, closeMiniPlayer,
-      theme, setTheme
+      theme, setTheme,
+      isAdActive, setIsAdActive,
+      adCountdownGlobal, setAdCountdownGlobal,
+      adTotalCountdownGlobal, setAdTotalCountdownGlobal,
+      isAdPausedGlobal, setIsAdPausedGlobal
     }}>
       {children}
     </UIContext.Provider>

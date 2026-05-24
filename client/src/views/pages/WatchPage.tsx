@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
-import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, ChevronDown, ChevronUp, MessageSquare, X, Play, Pause, ShieldCheck, Flag, AlertTriangle, Trash2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, ChevronDown, ChevronUp, MessageSquare, X, Play, Pause, ShieldCheck, Flag, AlertTriangle, Trash2, Copy } from 'lucide-react';
 import VideoCard from '@/views/components/VideoCard';
 import Link from 'next/link';
 import { formatDuration, getUploadUrl } from '@/lib/utils';
@@ -24,7 +24,15 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     setMiniPlayerTime, 
     setIsPlaying,
     activeVideo,
-    setIsLoginDropdownOpen // Nhận hàm kích hoạt login từ UIContext
+    setIsLoginDropdownOpen, // Nhận hàm kích hoạt login từ UIContext
+    isAdActive,
+    setIsAdActive,
+    adCountdownGlobal,
+    setAdCountdownGlobal,
+    adTotalCountdownGlobal,
+    setAdTotalCountdownGlobal,
+    isAdPausedGlobal,
+    setIsAdPausedGlobal
   } = useUI();
 
   // Hàm kiểm tra và cảnh báo Guest đăng nhập
@@ -68,7 +76,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     // 3. Kiểm tra đã mua (Dùng dữ liệu mới nhất từ DB nếu có, không thì dùng session)
     const purchasedVideos = currentUserData?.purchased_videos || user?.purchased_videos || [];
     const purchased = purchasedVideos.some((id: any) => id.toString() === (video._id || video.video_id).toString());
-    
+    return purchased;
   }, [video, user, currentUserData]);
 
   const isOwner = useMemo(() => {
@@ -131,6 +139,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   // States and refs for reporting video
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Spam hoặc gây hiểu lầm');
   const [customReportReason, setCustomReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -188,24 +197,53 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   };
 
   // --- HỆ THỐNG QUẢNG CÁO PRE-ROLL XANH SM ---
-  // Xác định xem có phải đang quay lại video từ Mini Player hay không NGAY trong pha render đầu tiên
-  // (Tuyệt đối không phụ thuộc vào activeVideo để tránh bị ảnh hưởng bởi cơ chế sync useLayoutEffect)
-  const isReturningFromMiniplayer = useMemo(() => {
-    if (!activeVideo || !video) return false;
-    const activeId = (activeVideo._id || activeVideo.video_id)?.toString();
-    const currentId = (video._id || video.video_id)?.toString();
-    return activeId === currentId;
-  }, [video._id, video.video_id]);
+  // Ref để theo dõi xem có thực sự đang quay lại video từ Mini Player hay không
+  // Dùng refs để đánh giá duy nhất một lần tại thời điểm render đầu tiên của video mới,
+  // tránh race condition khi useLayoutEffect cập nhật activeVideo làm cho state này bị thay đổi sau đó.
+  const isReturningRef = useRef(false);
+  const lastVideoIdRef = useRef<string | null>(null);
+  const currentVideoId = (video?._id || video?.video_id)?.toString();
 
-  // Khởi tạo: Chỉ bật quảng cáo nếu (User không phải Premium) VÀ (video chuẩn bị xem KHÁC với video đang chạy ở Mini Player)
-  const [showAd, setShowAd] = useState(() => {
+  if (lastVideoIdRef.current !== currentVideoId) {
+    const activeId = (activeVideo?._id || activeVideo?.video_id)?.toString();
+    isReturningRef.current = !!activeVideo && activeId === currentVideoId && !isAdActive;
+    lastVideoIdRef.current = currentVideoId;
+  }
+
+  const isReturningFromMiniplayer = isReturningRef.current;
+
+  // Ref lưu giữ giá trị isAdActive ở render trước đó để bắt chính xác hành động chuyển tiếp từ true sang false (Ví dụ: user bấm Bỏ qua từ MiniPlayer)
+  const prevIsAdActiveRef = useRef(isAdActive);
+
+  // Khởi tạo state quảng cáo cục bộ để đồng bộ tức thì trên giao diện render đầu tiên, tránh race condition
+  const [localShowAd, setLocalShowAd] = useState(() => {
     const isPremiumUser = currentUserData?.is_premium === true || user?.is_premium === true;
     if (isPremiumUser) return false;
     return !isReturningFromMiniplayer;
   });
-  const [adCountdown, setAdCountdown] = useState(5);
-  const [adTotalCountdown, setAdTotalCountdown] = useState(30);
-  const [isAdPaused, setIsAdPaused] = useState(false);
+
+  // Ánh xạ các state quảng cáo cục bộ sang state toàn cục trỏ từ UIContext
+  const showAd = localShowAd;
+  const setShowAd = setLocalShowAd;
+  const adCountdown = adCountdownGlobal;
+  const setAdCountdown = setAdCountdownGlobal;
+  const adTotalCountdown = adTotalCountdownGlobal;
+  const setAdTotalCountdown = setAdTotalCountdownGlobal;
+  const isAdPaused = isAdPausedGlobal;
+  const setIsAdPaused = setIsAdPausedGlobal;
+
+  // Đồng bộ trạng thái quảng cáo từ cục bộ sang toàn cục
+  useEffect(() => {
+    setIsAdActive(localShowAd);
+  }, [localShowAd, setIsAdActive]);
+
+  // Đồng bộ trạng thái quảng cáo từ toàn cục về cục bộ (chỉ phản ứng khi quảng cáo thực sự được chuyển từ ON sang OFF từ bên ngoài)
+  useEffect(() => {
+    if (prevIsAdActiveRef.current && !isAdActive) {
+      setLocalShowAd(false);
+    }
+    prevIsAdActiveRef.current = isAdActive;
+  }, [isAdActive]);
 
   const adIframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -270,29 +308,21 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     setLocalComments(comments);
   }, [video?._id, video?.video_id, comments]);
 
-  // Bộ đếm ngược tích hợp: Đếm 5s hiển thị nút Skip & Đếm 30s tự động chuyển tiếp (Đóng băng khi isAdPaused = true)
+  // Theo dõi sự thay đổi của showAd (isAdActive) để đồng bộ phát video chính khi quảng cáo kết thúc hoặc được bỏ qua
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPurchased && showAd && !isAdPaused) {
-      interval = setInterval(() => {
-        // Đếm ngược 5 giây cho nút Bỏ qua
-        setAdCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-        
-        // Đếm ngược 30 giây cho tổng thời gian quảng cáo
-        setAdTotalCountdown((prev) => {
-          if (prev <= 1) {
-            // Khi hết 30 giây quảng cáo -> tự động tắt và phát video chính!
-            handleSkipAd();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (!showAd && isPurchased) {
+      setIsPlaying(true);
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play()
+          .then(() => {
+            addToHistoryAction((video._id || video.video_id).toString());
+          })
+          .catch(err => {
+            console.log("Auto-play main video blocked by browser:", err);
+          });
+      }
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPurchased, showAd, adCountdown, adTotalCountdown, isAdPaused]);
+  }, [showAd, isPurchased, video?._id, video?.video_id]);
   // ------------------------------------------
   const [activeFilter, setActiveFilter] = useState('all');
   const [displayVideos, setDisplayVideos] = useState<any[]>(relatedVideos);
@@ -347,14 +377,33 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       if (activeFilter === 'all') {
         setDisplayVideos(relatedVideos);
       } else if (activeFilter === 'category') {
-        // Filter by category_id
-        setDisplayVideos(relatedVideos.filter(v => v.category_id === video.category_id));
+        // Filter by category_id securely as string comparison
+        setDisplayVideos(relatedVideos.filter(v => v.category_id?.toString() === video.category_id?.toString()));
       } else if (activeFilter === 'history') {
         if (historyVideos.length === 0) {
           setIsLoadingHistory(true);
-          const history = await getWatchHistoryAction();
-          setHistoryVideos(history);
-          setDisplayVideos(history);
+          const rawHistory = await getWatchHistoryAction();
+          
+          // Map and ensure video_id is set
+          const formattedHistory = Array.isArray(rawHistory) ? rawHistory.map((v: any) => ({
+            ...v,
+            video_id: v._id?.toString() || v.video_id?.toString() || '',
+            channel_name: v.channel?.channel_name || 'Unknown Channel',
+            watched_at: v.watched_at || new Date().toISOString()
+          })) : [];
+
+          // Deduplicate: Keep only the first (newest) occurrence of each video
+          const seen = new Set();
+          const deduplicatedHistory = [];
+          for (const item of formattedHistory) {
+            if (item.video_id && !seen.has(item.video_id)) {
+              seen.add(item.video_id);
+              deduplicatedHistory.push(item);
+            }
+          }
+
+          setHistoryVideos(deduplicatedHistory);
+          setDisplayVideos(deduplicatedHistory);
           setIsLoadingHistory(false);
         } else {
           setDisplayVideos(historyVideos);
@@ -362,7 +411,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       }
     };
     filterVideos();
-  }, [activeFilter, relatedVideos, video.category_id]);
+  }, [activeFilter, relatedVideos, video.category_id, historyVideos.length]);
 
   const handleToggleLike = async () => {
     if (!ensureUserLoggedIn('Like video')) return;
@@ -461,6 +510,8 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       }
     };
   }, [video?.video_id]);
+
+
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -716,11 +767,11 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
 
           {/* LỚP PHỦ QUẢNG CÁO PRE-ROLL XANH SM */}
           {isPurchased && showAd && (
-            <div className="absolute inset-0 z-30 bg-black flex items-center justify-center animate-in fade-in duration-300">
+            <div className="absolute inset-0 z-30 bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300 dark-keep">
               <iframe 
                 ref={adIframeRef}
                 src="https://www.youtube.com/embed/ZPcCfW4JNO0?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&showinfo=0"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none"
                 allow="autoplay; encrypted-media"
                 title="Xanh SM Pre-roll Ad"
               />
@@ -739,12 +790,17 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
               </div>
               
               {/* Nhãn hiệu "Quảng cáo" (Ad label) ở góc trên bên trái */}
-              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 z-40">
+              <a 
+                href="https://www.xanhsm.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 z-40 hover:bg-black/85 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
+              >
                 <span className="bg-white text-zinc-950 font-extrabold text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
                   Ad
                 </span>
-                <span className="text-white font-bold text-xs">Xanh SM - Vì Tương Lai Xanh</span>
-              </div>
+                <span className="text-white font-bold text-xs hover:underline">Xanh SM - Vì Tương Lai Xanh</span>
+              </a>
 
               {/* Nút đếm ngược / Bỏ qua quảng cáo ở góc dưới bên phải */}
               <div className="absolute bottom-4 right-4 z-40">
@@ -772,7 +828,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
 
           {/* Overlay Khóa Video Trả Phí */}
           {!isPurchased && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121212]/95 backdrop-blur-xl z-20 p-6 text-center animate-in fade-in duration-500">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121212]/95 backdrop-blur-xl z-20 p-6 text-center animate-in fade-in duration-500 dark-keep">
               <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-6 ring-4 ring-red-600/10">
                 <ShieldCheck size={40} className="text-red-500 animate-pulse" />
               </div>
@@ -885,7 +941,10 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
               <span>{isSaved ? 'Đã lưu' : 'Lưu'}</span>
             </button>
             
-            <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-white text-sm font-medium transition">
+            <button 
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-white text-sm font-medium transition"
+            >
               <Share2 size={18} />
               <span>Chia sẻ</span>
             </button>
@@ -1200,7 +1259,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       {/* Cột phụ: Video gợi ý */}
       <aside className="xl:w-[400px] flex-shrink-0 space-y-6">
         {/* Banner Carousel Frame */}
-        <div className="relative aspect-[2/1] rounded-xl overflow-hidden border border-white/10 shadow-2xl group bg-black/20">
+        <div className="relative aspect-[2/1] rounded-xl overflow-hidden border border-white/10 shadow-2xl group bg-black/20 dark-keep">
           {watchBanners.map((banner, idx) => {
             const isCurrent = idx === currentBanner;
             const isPrev = idx === prevBanner;
@@ -1316,7 +1375,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                         </div>
                       )}
 
-                      <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white z-10 border border-white/10">
+                      <div className="absolute bottom-1 right-1 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold z-10 border border-white/10" style={{ color: '#ffffff', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
                         {formatDuration(item.duration || 0)}
                       </div>
                     </div>
@@ -1509,6 +1568,134 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Glassmorphic Share Modal */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6 relative">
+            <button 
+              onClick={() => setIsShareModalOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-500">
+                <Share2 size={20} />
+              </div>
+              <div className="text-left">
+                <h3 className="text-lg font-bold text-white">Chia sẻ video</h3>
+                <p className="text-xs text-white/50">Chia sẻ video này đến mọi người.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition group"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center text-[#1877F2] group-hover:scale-110 transition">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </div>
+                <span className="text-[10px] text-white/60 font-semibold group-hover:text-white transition">Facebook</span>
+              </a>
+
+              <a
+                href={`https://zalo.me/share?to=&utm_source=zaloshare&utm_medium=zalo&utm_campaign=share&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition group animate-pulse"
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition font-black text-xs">
+                  Zalo
+                </div>
+                <span className="text-[10px] text-white/60 font-semibold group-hover:text-white transition">Zalo</span>
+              </a>
+
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(video.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition group"
+              >
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </div>
+                <span className="text-[10px] text-white/60 font-semibold group-hover:text-white transition">Twitter / X</span>
+              </a>
+
+              <a
+                href={`https://t.me/share/url?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(video.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition group"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] group-hover:scale-110 transition">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.24-.213-.054-.33-.373-.12l-6.87 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.46c.536-.2 1.006.12.834.938z"/>
+                  </svg>
+                </div>
+                <span className="text-[10px] text-white/60 font-semibold group-hover:text-white transition">Telegram</span>
+              </a>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-white/60 block text-left">Hoặc sao chép liên kết:</label>
+              <div className="flex gap-2 bg-white/5 border border-white/10 rounded-2xl p-1.5 pl-4">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={typeof window !== 'undefined' ? window.location.href : ''}
+                  className="bg-transparent flex-1 text-xs text-white/80 outline-none select-all min-w-0"
+                />
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(window.location.href);
+                      setToast({ message: 'Sao chép liên kết thành công!', type: 'success' });
+                      setIsShareModalOpen(false);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-600/10 active:scale-95 flex-shrink-0"
+                >
+                  <Copy size={14} />
+                  <span>Sao chép</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Native Share Trigger if supported */}
+            {typeof navigator !== 'undefined' && navigator.share && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        title: video.title,
+                        text: `Xem video "${video.title}" trên MyTube`,
+                        url: window.location.href
+                      });
+                      setIsShareModalOpen(false);
+                    } catch (err) {
+                      console.log('Share canceled or failed:', err);
+                    }
+                  }}
+                  className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold rounded-2xl transition border border-white/5 hover:border-white/10 text-center"
+                >
+                  Chia sẻ qua ứng dụng khác...
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

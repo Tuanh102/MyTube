@@ -1,7 +1,7 @@
 import WatchPage from "@/views/pages/WatchPage";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
+import { authOptions } from "../../api/auth/[...nextauth]/options";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,7 +50,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             sub_count: apiData.video.channel?.subscribers?.length || 0,
             is_followed: (userId && apiData.video.channel?.subscribers?.map((subId: any) => subId.toString()).includes(userId.toString())) ? 1 : 0,
             is_free: apiData.video.is_free,
-            price: apiData.video.price
+            price: apiData.video.price,
+            category_id: apiData.video.category_id
           },
           relatedVideos: apiData.relatedVideos.map((v: any) => ({
             video_id: v._id,
@@ -65,7 +66,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             duration: v.duration || 0,
             created_at: v.createdAt,
             is_free: v.is_free,
-            price: v.price
+            price: v.price,
+            category_id: v.category_id
           })),
           comments: []
         };

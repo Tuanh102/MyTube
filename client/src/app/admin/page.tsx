@@ -27,11 +27,32 @@ import {
     ChevronRight,
     Smartphone,
     TrendingUp,
-    Copy
+    Copy,
+    Sun,
+    Moon,
+    Laptop,
+    Clock
 } from 'lucide-react';
+import { useUI } from '@/context/UIContext';
 
 export default function AdminPage() {
     const router = useRouter();
+    const { theme, setTheme } = useUI();
+    const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
+    const themeDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
+                setIsThemeDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     const [admin, setAdmin] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('overview');
     
@@ -259,38 +280,53 @@ export default function AdminPage() {
             const checkRes = await fetch(`/api/admin/withdrawals/${withdrawalId}`);
             if (checkRes.ok) {
                 const checkData = await checkRes.json();
-                if (checkData.status !== 'SUCCESS') {
-                    alert('⚠️ HỆ THỐNG CHƯA NHẬN ĐƯỢC TÍN HIỆU THANH TOÁN THỰC TẾ!\n\nVui lòng quét mã QR Giả lập (Cách 2) hoặc bấm nút "Mở Trình Giả Lập trên PC" và ấn "Xác nhận chuyển tiền" trên giao diện ngân hàng trước.');
+                if (checkData.status === 'SUCCESS') {
+                    alert('✨ Hệ thống đã tự động ghi nhận thanh toán thành công!\n\nKhông cần duyệt lại.');
+                    setShowWithdrawalModal(false);
+                    setSelectedWithdrawal(null);
+                    fetchWithdrawals();
+                    fetchStats();
+                    fetchTransactions();
                     setIsSubmittingAction(false);
                     return;
                 }
-            }
-            
-            if (!confirm('Bạn có chắc chắn muốn xác nhận duyệt thành công cho yêu cầu này?')) {
-                setIsSubmittingAction(false);
-                return;
-            }
-            
-            const res = await fetch('/api/admin/withdrawals', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'approve',
-                    id: withdrawalId,
-                    method: 'AUTOMATIC_SIMULATED'
-                })
-            });
 
-            if (res.ok) {
-                alert('Duyệt thanh toán thành công!');
-                setShowWithdrawalModal(false);
-                setSelectedWithdrawal(null);
-                fetchWithdrawals();
-                fetchStats();
-                fetchTransactions();
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Có lỗi xảy ra khi duyệt rút tiền.');
+                if (checkData.status !== 'SUCCESS') {
+                    const confirmManual = confirm(
+                        '⚠️ HỆ THỐNG CHƯA NHẬN ĐƯỢC TÍN HIỆU THANH TOÁN TỰ ĐỘNG (Giao dịch đang ở trạng thái PENDING)!\n\n' +
+                        'Nếu bạn ĐÃ CHUYỂN TIỀN THỰC TẾ thành công bằng tay từ tài khoản ngân hàng của bạn và muốn Ép buộc Duyệt thủ công giao dịch này, hãy bấm OK.\n\n' +
+                        'Lưu ý: Thao tác này sẽ trừ số dư của Creator, giảm số dư ví Admin và cập nhật trạng thái yêu cầu rút tiền thành SUCCESS.'
+                    );
+                    if (!confirmManual) {
+                        setIsSubmittingAction(false);
+                        return;
+                    }
+
+                    // Proceed with MANUAL approval bypass
+                    const res = await fetch('/api/admin/withdrawals', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'approve',
+                            id: withdrawalId,
+                            method: 'MANUAL'
+                        })
+                    });
+
+                    if (res.ok) {
+                        alert('Duyệt chi thủ công (Bypass) thành công!');
+                        setShowWithdrawalModal(false);
+                        setSelectedWithdrawal(null);
+                        fetchWithdrawals();
+                        fetchStats();
+                        fetchTransactions();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || 'Có lỗi xảy ra khi duyệt rút tiền.');
+                    }
+                    setIsSubmittingAction(false);
+                    return;
+                }
             }
         } catch (err) {
             console.error(err);
@@ -563,6 +599,99 @@ export default function AdminPage() {
                                             Xem tất cả <ChevronRight size={12} />
                                         </button>
                                     )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Nút cài đặt giao diện Đa Chế Độ */}
+                        <div className="relative" ref={themeDropdownRef}>
+                            <button
+                                onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+                                title="Thay đổi giao diện"
+                                className="p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer flex items-center justify-center border border-white/5"
+                            >
+                                {theme === 'light' ? (
+                                    <Sun size={18} className="text-amber-500 fill-amber-500/20" />
+                                ) : theme === 'dark' ? (
+                                    <Moon size={18} className="text-indigo-400 fill-indigo-400/20" />
+                                ) : theme === 'schedule' ? (
+                                    <Clock size={18} className="text-teal-400" />
+                                ) : (
+                                    <Laptop size={18} className="text-zinc-300" />
+                                )}
+                            </button>
+
+                            {isThemeDropdownOpen && (
+                                <div className="absolute top-11 right-0 w-48 bg-[#202020] border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-3 py-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+                                        Giao diện
+                                    </div>
+                                    <ul className="space-y-0.5 px-1.5 mt-1">
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('system');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'system' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Laptop size={14} />
+                                                <span>Hệ thống</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('light');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'light' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Sun size={14} className="text-amber-500" />
+                                                <span>Giao diện Sáng</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('dark');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'dark' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Moon size={14} className="text-indigo-400" />
+                                                <span>Giao diện Tối</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('schedule');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'schedule' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Clock size={14} className="text-teal-400" />
+                                                <span>Tự động theo giờ</span>
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             )}
                         </div>
@@ -981,7 +1110,7 @@ export default function AdminPage() {
 
                         {/* Automatic Payout Simulator Interface Override */}
                         {isProcessingAuto ? (
-                            <div className="p-10 flex flex-col items-center justify-center min-h-[480px] bg-black font-mono">
+                            <div className="p-10 flex flex-col items-center justify-center min-h-[480px] bg-black font-mono payout-terminal">
                                 <Loader2 size={40} className="text-red-500 animate-spin mb-6" />
                                 <h3 className="text-lg font-bold text-red-500 uppercase tracking-widest mb-2 animate-pulse">GATEWAY CHI TỰ ĐỘNG</h3>
                                 <p className="text-white/40 text-xs mb-8">ĐANG KẾT NỐI HỆ THỐNG GIẢI NGÂN NAPAS247</p>

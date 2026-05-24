@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Flag, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Flag, AlertTriangle, CheckCircle, XCircle, Users } from 'lucide-react';
 import { getUploadUrl } from '@/lib/utils';
 
 interface ReportPageProps {
@@ -47,7 +47,7 @@ export default function ReportPage({ reports }: ReportPageProps) {
             </div>
             <div className="absolute inset-0 bg-red-500/30 blur-2xl rounded-full"></div>
           </div>
-          <div>
+          <div className="text-left">
             <h1 className="text-3xl font-black text-white">Lịch sử báo cáo</h1>
             <p className="text-sm text-white/40 font-medium tracking-wide uppercase">{reports.length} báo cáo của bạn</p>
           </div>
@@ -58,38 +58,69 @@ export default function ReportPage({ reports }: ReportPageProps) {
         {reports.length > 0 ? (
           reports.map((report) => {
             const isDeleted = report.status === 'RESOLVED_DELETED';
+            const isChannel = report.type === 'channel' || !!report.channelId;
+            
             const itemContent = (
               <div className={`flex flex-col sm:flex-row gap-5 flex-1 min-w-0 ${isDeleted ? 'opacity-80' : ''}`}>
-                {/* Video Thumbnail */}
-                <div className="relative w-full sm:w-52 aspect-video rounded-2xl overflow-hidden flex-shrink-0 bg-zinc-900 border border-white/5 shadow-md">
-                  {report.videoThumbnail ? (
-                    <img 
-                      src={getUploadUrl(report.videoThumbnail)} 
-                      className={`w-full h-full object-cover transition duration-700 ${!isDeleted ? 'group-hover:scale-110' : ''}`}
-                      alt="" 
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
-                      <Flag size={24} />
-                    </div>
-                  )}
-                  {isDeleted && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
-                      <span className="text-[11px] font-black text-red-400 bg-red-950/80 border border-red-500/30 px-3 py-1 rounded-full uppercase tracking-wider">
-                        Đã gỡ bỏ
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {/* Thumbnail / Avatar */}
+                {isChannel ? (
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-zinc-900 border border-white/5 shadow-md mx-auto sm:mx-0">
+                    {report.channelAvatar ? (
+                      <img 
+                        src={getUploadUrl(report.channelAvatar)} 
+                        className={`w-full h-full object-cover transition duration-700 ${!isDeleted ? 'group-hover:scale-110' : ''}`}
+                        alt="" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
+                        <Users size={24} />
+                      </div>
+                    )}
+                    {isDeleted && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                        <span className="text-[9px] font-black text-red-400 bg-red-950/80 border border-red-500/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Đã xóa
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative w-full sm:w-52 aspect-video rounded-2xl overflow-hidden flex-shrink-0 bg-zinc-900 border border-white/5 shadow-md">
+                    {report.videoThumbnail ? (
+                      <img 
+                        src={getUploadUrl(report.videoThumbnail)} 
+                        className={`w-full h-full object-cover transition duration-700 ${!isDeleted ? 'group-hover:scale-110' : ''}`}
+                        alt="" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
+                        <Flag size={24} />
+                      </div>
+                    )}
+                    {isDeleted && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                        <span className="text-[11px] font-black text-red-400 bg-red-950/80 border border-red-500/30 px-3 py-1 rounded-full uppercase tracking-wider">
+                          Đã gỡ bỏ
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 {/* Details */}
-                <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                <div className="flex-1 min-w-0 py-1 flex flex-col justify-between text-left">
                   <div>
                     <h3 className={`text-base font-bold text-white mb-2 line-clamp-2 transition duration-300 ${!isDeleted ? 'group-hover:text-red-400' : 'text-zinc-400'}`}>
-                      {report.videoTitle || 'Video không tên hoặc đã bị xóa'}
+                      {isChannel 
+                        ? (report.channelName || 'Kênh không tên hoặc đã bị xóa')
+                        : (report.videoTitle || 'Video không tên hoặc đã bị xóa')
+                      }
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 text-xs">
-                      <span className="text-white/60 font-semibold bg-white/5 border border-white/5 px-2.5 py-1 rounded-xl">
+                      <span className="text-white/60 font-semibold bg-white/5 border border-white/5 px-2.5 py-1.5 rounded-xl">
+                        {isChannel ? 'Báo cáo Kênh' : 'Báo cáo Video'}
+                      </span>
+                      <span className="text-white/60 font-semibold bg-white/5 border border-white/5 px-2.5 py-1.5 rounded-xl">
                         Lý do: <span className="text-red-400">{report.reason}</span>
                       </span>
                       <span className="text-white/30 font-bold">
@@ -106,11 +137,11 @@ export default function ReportPage({ reports }: ReportPageProps) {
                   
                   <div className="mt-3 text-xs text-white/50 bg-white/5 px-3 py-2 rounded-2xl border border-white/5 max-w-lg">
                     {isDeleted ? (
-                      <p className="text-emerald-400/90 font-medium">✓ Cảm ơn bạn. Video này đã bị xóa do vi phạm tiêu chuẩn cộng đồng.</p>
+                      <p className="text-emerald-400/90 font-medium">✓ Cảm ơn bạn. {isChannel ? 'Kênh' : 'Video'} này đã bị xóa do vi phạm tiêu chuẩn cộng đồng.</p>
                     ) : report.status === 'RESOLVED_DISMISSED' ? (
-                      <p className="text-white/40 font-medium">✗ Báo cáo đã đóng. Đội ngũ kiểm duyệt không tìm thấy vi phạm trên video này.</p>
+                      <p className="text-white/40 font-medium">✗ Báo cáo đã đóng. Đội ngũ kiểm duyệt không tìm thấy vi phạm trên {isChannel ? 'kênh' : 'video'} này.</p>
                     ) : (
-                      <p className="text-amber-400/90 font-medium">⚡ Đang chờ nhân viên kiểm duyệt kiểm tra và đối chiếu nội dung video.</p>
+                      <p className="text-amber-400/90 font-medium">⚡ Đang chờ nhân viên kiểm duyệt kiểm tra và đối chiếu nội dung {isChannel ? 'kênh' : 'video'}.</p>
                     )}
                   </div>
                 </div>
@@ -120,12 +151,18 @@ export default function ReportPage({ reports }: ReportPageProps) {
             return (
               <div 
                 key={report._id} 
-                className="group flex items-start justify-between p-4 bg-zinc-950/40 hover:bg-zinc-950/70 border border-white/5 rounded-3xl transition relative overflow-hidden"
+                className="group flex items-start justify-between p-4 bg-zinc-950/40 hover:bg-zinc-950/70 border border-white/5 rounded-3xl transition relative overflow-hidden animate-in fade-in duration-300"
               >
-                {!isDeleted && report.videoId ? (
-                  <Link href={`/watch/${report.videoId}`} className="flex flex-col sm:flex-row gap-5 flex-1 min-w-0">
-                    {itemContent}
-                  </Link>
+                {!isDeleted ? (
+                  isChannel ? (
+                    <Link href={`/channel/${report.channelId}`} className="flex flex-col sm:flex-row gap-5 flex-1 min-w-0">
+                      {itemContent}
+                    </Link>
+                  ) : (
+                    <Link href={`/watch/${report.videoId}`} className="flex flex-col sm:flex-row gap-5 flex-1 min-w-0">
+                      {itemContent}
+                    </Link>
+                  )
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-5 flex-1 min-w-0">
                     {itemContent}

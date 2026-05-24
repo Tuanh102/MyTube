@@ -1,6 +1,6 @@
 import PurchasedPage from "@/views/pages/PurchasedPage";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 import { getPurchasedVideosAction } from "@/lib/actions";
 import { redirect } from "next/navigation";
 

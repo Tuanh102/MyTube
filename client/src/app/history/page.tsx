@@ -1,6 +1,6 @@
 import HistoryPage from "@/views/pages/HistoryPage";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 import { getWatchHistoryAction } from "@/lib/actions";
 import { redirect } from "next/navigation";
 

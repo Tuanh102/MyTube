@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Search, Bell, User, LogOut, Key, UserCircle, Plus, Crown, CreditCard, Clapperboard, Star, Ticket, Sparkles, Calendar, Sun, Moon, Laptop } from 'lucide-react';
+import { Menu, Search, Bell, User, LogOut, Key, UserCircle, Plus, Crown, CreditCard, Clapperboard, Star, Ticket, Sparkles, Calendar, Sun, Moon, Laptop, Clock, Radio, Camera, Mic } from 'lucide-react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useUI } from '@/context/UIContext';
@@ -148,6 +148,27 @@ export default function Header() {
   const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
   const [channels, setChannels] = useState<any[]>([]);
   
+  // Live Stream states
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [liveTitle, setLiveTitle] = useState('');
+  const [liveIdentityType, setLiveIdentityType] = useState<'user' | 'channel'>('user');
+  const [liveIdentityId, setLiveIdentityId] = useState('');
+  const [isCreatingLive, setIsCreatingLive] = useState(false);
+  const liveDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [hasUsedLive, setHasUsedLive] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasUsedLive(localStorage.getItem('has_used_live') === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchChannels();
+    }
+  }, [user?.id]);
+  
   // Khởi tạo Ref để kiểm soát click outside
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -160,6 +181,9 @@ export default function Header() {
       }
       if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
         setIsThemeDropdownOpen(false);
+      }
+      if (liveDropdownRef.current && !liveDropdownRef.current.contains(event.target as Node)) {
+        setIsLiveModalOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -189,6 +213,91 @@ export default function Header() {
       }
     } else {
       router.push('/studio');
+    }
+  };
+
+  const handleLiveClick = async () => {
+    if (!user) {
+      const confirmLogin = window.confirm("Bạn cần đăng nhập để bắt đầu phiên Live Stream. Click OK để đăng nhập ngay!");
+      if (confirmLogin) {
+        setIsLoginDropdownOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    if (isLiveModalOpen) {
+      setIsLiveModalOpen(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/channels');
+      if (res.ok) {
+        const data = await res.json();
+        setChannels(data);
+        if (data.length > 0) {
+          setLiveIdentityType('channel');
+          setLiveIdentityId(data[0]._id);
+        } else {
+          setLiveIdentityType('channel');
+          setLiveIdentityId('');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    
+    setLiveTitle('');
+    setIsLiveModalOpen(true);
+  };
+
+  const requestDevicePermissions = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      localStorage.setItem('has_used_live', 'true');
+      setHasUsedLive(true);
+    } catch (err) {
+      alert('Không thể truy cập Camera/Micro. Vui lòng kiểm tra và cấp quyền trong cài đặt trình duyệt của bạn!');
+    }
+  };
+
+  const handleStartLive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    if (!liveTitle.trim()) {
+      alert('Vui lòng nhập tiêu đề phiên Live Stream!');
+      return;
+    }
+
+    setIsCreatingLive(true);
+    try {
+      const res = await fetch('/api/live/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          streamerId: user.id,
+          title: liveTitle.trim(),
+          identityType: liveIdentityType,
+          identityId: liveIdentityId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Không thể tạo phiên Live Stream');
+      }
+
+      const stream = await res.json();
+      setIsLiveModalOpen(false);
+      
+      router.push(`/live/host?id=${stream._id}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Lỗi hệ thống khi tạo phiên Live Stream');
+    } finally {
+      setIsCreatingLive(false);
     }
   };
 
@@ -261,7 +370,7 @@ export default function Header() {
         <form onSubmit={handleSearch} className="relative flex items-center">
           <input 
             type="text" 
-            placeholder="Tìm kiếm"
+            placeholder="Tìm kiếm ..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full bg-[#121212] border border-white/10 rounded-l-full py-2 px-5 text-white focus:outline-none focus:border-red-500 transition"
@@ -273,14 +382,129 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative">
+        <div className="relative" ref={liveDropdownRef}>
           <button 
-            onClick={handleCreateClick}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition text-white text-sm font-bold"
+            onClick={handleLiveClick}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-full transition text-white text-sm font-bold shadow-lg shadow-red-600/30 active:scale-95 cursor-pointer"
           >
-            <Plus size={20} />
-            <span className="hidden sm:inline">Tạo</span>
+            <Radio size={16} className="animate-pulse" />
+            <span className="hidden sm:inline">Live</span>
           </button>
+
+          {isLiveModalOpen && (
+            <div className="absolute top-12 right-0 w-80 sm:w-96 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-5 z-[999] text-left animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                  <Radio size={16} className="text-red-500 animate-pulse" /> 
+                  <span>Thiết lập Phát trực tiếp</span>
+                </h3>
+                <button 
+                  onClick={() => setIsLiveModalOpen(false)}
+                  className="text-white/40 hover:text-white transition text-xs font-bold cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+
+              {!hasUsedLive ? (
+                <div className="space-y-4 text-center py-2">
+                  <div className="flex justify-center gap-4 text-red-500">
+                    <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                      <Camera size={24} />
+                    </div>
+                    <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                      <Mic size={24} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-white">Yêu cầu quyền truy cập Camera & Mic</h4>
+                    <p className="text-white/40 text-[10px] leading-relaxed">
+                      Để có thể phát trực tiếp và tương tác thời gian thực, vui lòng cấp quyền truy cập Camera và Microphone trên máy tính này.
+                    </p>
+                  </div>
+                  <button
+                    onClick={requestDevicePermissions}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg shadow-red-600/15"
+                  >
+                    Yêu cầu cấp quyền
+                  </button>
+                </div>
+              ) : channels.length === 0 ? (
+                <div className="space-y-4 text-center py-2">
+                  <div className="flex justify-center text-amber-500 animate-bounce">
+                    <Clapperboard size={36} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-white">Yêu cầu Kênh để Live</h4>
+                    <p className="text-white/40 text-[10px] leading-relaxed">
+                      Bạn cần sở hữu ít nhất một Kênh sáng tạo để có thể bắt đầu tính năng phát trực tiếp Live Stream trên MyTube.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsLiveModalOpen(false);
+                      setIsChannelModalOpen(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-zinc-950 font-extrabold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg"
+                  >
+                    Tạo kênh của bạn ngay
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleStartLive} className="space-y-4">
+                  {/* Tiêu đề live */}
+                  <div>
+                    <label className="text-[9px] font-black text-white/40 uppercase mb-1.5 block tracking-wider">Tiêu đề phiên Live</label>
+                    <input 
+                      type="text" 
+                      value={liveTitle}
+                      onChange={(e) => setLiveTitle(e.target.value)}
+                      placeholder="Ví dụ: Giao lưu cuối tuần cùng fan..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-white outline-none focus:border-red-500 transition text-xs"
+                      required
+                    />
+                  </div>
+
+                  {/* Lựa chọn tư cách phát */}
+                  <div>
+                    <label className="text-[9px] font-black text-white/40 uppercase mb-2 block tracking-wider">Phát dưới tư cách Kênh</label>
+                    <div className="grid grid-cols-1 gap-2 max-h-[140px] overflow-y-auto pr-1">
+                      {channels.map((chan) => (
+                        <div 
+                          key={chan._id}
+                          onClick={() => {
+                            setLiveIdentityType('channel');
+                            setLiveIdentityId(chan._id);
+                          }}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                            liveIdentityType === 'channel' && liveIdentityId === chan._id
+                              ? 'bg-red-500/10 border-red-500/50 shadow-md shadow-red-500/5' 
+                              : 'bg-white/5 border-white/5 hover:border-white/15'
+                          }`}
+                        >
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                            <img src={chan.logo || '/assets/img/avata.jpg'} className="w-full h-full object-cover" alt="Channel logo" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white font-bold text-xs block truncate">{chan.channel_name}</span>
+                            <span className="text-white/40 text-[9px]">Kênh phát sóng</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={isCreatingLive}
+                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-black py-2.5 rounded-xl transition shadow-lg shadow-red-600/15 flex items-center justify-center gap-2 uppercase tracking-wider text-[10px] mt-2 cursor-pointer"
+                  >
+                    {isCreatingLive ? 'Đang chuẩn bị...' : 'Bắt đầu phát trực tiếp'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         <button 
@@ -304,9 +528,11 @@ export default function Header() {
             className="p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer flex items-center justify-center"
           >
             {theme === 'light' ? (
-              <Sun size={22} className="text-amber-500 fill-amber-500/20" />
+              <Sun size={22} className="text-amber-500" />
             ) : theme === 'dark' ? (
-              <Moon size={22} className="text-indigo-400 fill-indigo-400/20" />
+              <Moon size={22} className="text-indigo-400" />
+            ) : theme === 'schedule' ? (
+              <Clock size={22} className="text-teal-400" />
             ) : (
               <Laptop size={22} className="text-zinc-300" />
             )}
@@ -364,6 +590,22 @@ export default function Header() {
                   >
                     <Moon size={16} className="text-indigo-400" />
                     <span>Giao diện Tối</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setTheme('schedule');
+                      setIsThemeDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                      theme === 'schedule' 
+                        ? 'bg-white/10 text-white font-semibold' 
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Clock size={16} className="text-teal-400" />
+                    <span>Tự động theo giờ</span>
                   </button>
                 </li>
               </ul>
@@ -460,7 +702,8 @@ export default function Header() {
                     setIsLoginDropdownOpen(false);
                     signIn('facebook');
                   }}
-                  className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs shadow-lg shadow-[#1877F2]/10"
+                  className="w-full bg-[#1877F2] hover:bg-[#166FE5] font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs shadow-lg shadow-[#1877F2]/10"
+                  style={{ color: '#ffffff' }}
                 >
                   <svg className="w-5 h-5 fill-white flex-shrink-0" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -474,7 +717,8 @@ export default function Header() {
                     setIsLoginDropdownOpen(false);
                     signIn('github');
                   }}
-                  className="w-full bg-[#24292f] hover:bg-[#2f363d] text-white font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs border border-white/10 shadow-lg"
+                  className="w-full bg-[#24292f] hover:bg-[#2f363d] font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs border border-white/10 shadow-lg"
+                  style={{ color: '#ffffff' }}
                 >
                   <svg className="w-5 h-5 fill-white flex-shrink-0" viewBox="0 0 24 24">
                     <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z"/>
@@ -488,7 +732,8 @@ export default function Header() {
                     setIsLoginDropdownOpen(false);
                     signIn('discord');
                   }}
-                  className="w-full bg-[#5865F2] hover:bg-[#4e5dff] text-white font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs shadow-lg shadow-[#5865F2]/10"
+                  className="w-full bg-[#5865F2] hover:bg-[#4e5dff] font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] cursor-pointer text-xs shadow-lg shadow-[#5865F2]/10"
+                  style={{ color: '#ffffff' }}
                 >
                   <svg className="w-5 h-5 fill-white flex-shrink-0" viewBox="0 0 127.14 96.36">
                     <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.9-.65,1.76-1.34,2.58-2a75.58,75.58,0,0,0,72.9,0c.82.71,1.68,1.4,2.58,2a68.43,68.43,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,50.31,123.65,27.55,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
@@ -585,6 +830,29 @@ export default function Header() {
               <div className="py-2">
                 <ul className="space-y-0.5 px-2">
                   <li>
+                    {channels.length > 0 ? (
+                      <Link 
+                        href={`/channel/${channels[0]._id}`} 
+                        onClick={() => setIsAuthOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg text-white transition text-sm font-medium"
+                      >
+                        <UserCircle size={18} className="text-white/60" /> 
+                        <span>Trang cá nhân</span>
+                      </Link>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                          setIsAuthOpen(false);
+                          setIsChannelModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg text-white transition text-sm font-medium text-left cursor-pointer"
+                      >
+                        <UserCircle size={18} className="text-white/60" /> 
+                        <span>Tạo kênh cá nhân</span>
+                      </button>
+                    )}
+                  </li>
+                  <li>
                     <Link 
                       href="/studio" 
                       onClick={() => setIsAuthOpen(false)}
@@ -627,6 +895,7 @@ export default function Header() {
           )}
         </div>
       </div>
+
     </header>
   );
 }

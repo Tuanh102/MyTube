@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
     LayoutDashboard, 
@@ -20,18 +20,45 @@ import {
     ChevronRight,
     ShieldCheck,
     XCircle,
-    Play
+    Play,
+    Sun,
+    Moon,
+    Laptop,
+    Radio,
+    Power
 } from 'lucide-react';
+import { useUI } from '@/context/UIContext';
 
 export default function StaffPage() {
     const router = useRouter();
+    const { theme, setTheme } = useUI();
+    const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
+    const themeDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
+                setIsThemeDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     const [staff, setStaff] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalVideos: 0,
-        pendingVideos: 0 
+        pendingVideos: 0,
+        reports: []
     });
+
+    // States cho Live Moderation
+    const [activeStreams, setActiveStreams] = useState<any[]>([]);
+    const [isLiveActionLoading, setIsLiveActionLoading] = useState<string | null>(null);
 
     // States cho Moderation
     const [pendingVideos, setPendingVideos] = useState<any[]>([]);
@@ -58,6 +85,49 @@ export default function StaffPage() {
             fetchReports();
         }
     }, [router]);
+
+    const fetchActiveStreams = async () => {
+        try {
+            const res = await fetch('http://127.0.0.1:5000/live/active');
+            if (res.ok) {
+                const data = await res.json();
+                setActiveStreams(data);
+            }
+        } catch (error) {
+            console.error('Lỗi lấy danh sách streams cho Staff:', error);
+        }
+    };
+
+    const handleForceEndStream = async (streamId: string) => {
+        const confirmStop = window.confirm("Bạn có chắc chắn muốn tắt phiên phát trực tiếp vi phạm này ngay lập tức?");
+        if (!confirmStop) return;
+
+        setIsLiveActionLoading(streamId);
+        try {
+            const res = await fetch(`http://127.0.0.1:5000/live/${streamId}/end`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                alert('Đã dừng phiên Live Stream vi phạm thành công!');
+                fetchActiveStreams();
+            } else {
+                alert('Lỗi khi dừng phiên Live Stream');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Lỗi hệ thống khi dừng phiên Live Stream');
+        } finally {
+            setIsLiveActionLoading(null);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'lives') {
+            fetchActiveStreams();
+            const interval = setInterval(fetchActiveStreams, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [activeTab]);
 
     const fetchStats = async () => {
         try {
@@ -118,7 +188,7 @@ export default function StaffPage() {
         }
     };
 
-    const handleResolveReport = async (reportId: string, action: 'DELETE_VIDEO' | 'KEEP_VIDEO') => {
+    const handleResolveReport = async (reportId: string, action: 'DELETE_VIDEO' | 'KEEP_VIDEO' | 'DELETE_CHANNEL' | 'KEEP_CHANNEL') => {
         setIsActionLoading(reportId);
         try {
             const res = await fetch(`http://127.0.0.1:5000/reports/${reportId}/resolve`, {
@@ -129,7 +199,12 @@ export default function StaffPage() {
             if (res.ok) {
                 fetchReports();
                 fetchStats();
-                alert(action === 'DELETE_VIDEO' ? 'Đã xóa video vi phạm!' : 'Đã giữ lại video và đóng báo cáo!');
+                let msg = '';
+                if (action === 'DELETE_VIDEO') msg = 'Đã xóa video vi phạm!';
+                else if (action === 'KEEP_VIDEO') msg = 'Đã giữ lại video và đóng báo cáo!';
+                else if (action === 'DELETE_CHANNEL') msg = 'Đã xóa kênh vi phạm!';
+                else if (action === 'KEEP_CHANNEL') msg = 'Đã giữ lại kênh và đóng báo cáo!';
+                alert(msg);
             }
         } catch (error) {
             alert('Lỗi khi thực hiện thao tác');
@@ -241,7 +316,14 @@ export default function StaffPage() {
                         className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${activeTab === 'reports' ? 'bg-white/[0.03] border border-white/5 text-white' : 'text-white/40 hover:text-white hover:bg-white/[0.02]'}`}
                     >
                         <Flag size={18} className={activeTab === 'reports' ? 'text-red-500' : ''} />
-                        <span className="hidden lg:block font-medium">Báo cáo Video</span>
+                        <span className="hidden lg:block font-medium">Báo cáo vi phạm</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('lives')}
+                        className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${activeTab === 'lives' ? 'bg-white/[0.03] border border-white/5 text-white' : 'text-white/40 hover:text-white hover:bg-white/[0.02]'}`}
+                    >
+                        <Radio size={18} className={activeTab === 'lives' ? 'text-red-500' : ''} />
+                        <span className="hidden lg:block font-medium">Kiểm duyệt Live Stream</span>
                     </button>
                 </nav>
 
@@ -261,6 +343,99 @@ export default function StaffPage() {
                         <input type="text" placeholder="Tìm kiếm công việc..." className="bg-transparent border-none outline-none text-xs w-full" />
                     </div>
                     <div className="flex items-center gap-6">
+                        {/* Nút cài đặt giao diện Đa Chế Độ */}
+                        <div className="relative" ref={themeDropdownRef}>
+                            <button
+                                onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+                                title="Thay đổi giao diện"
+                                className="p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer flex items-center justify-center border border-white/5"
+                            >
+                                {theme === 'light' ? (
+                                    <Sun size={18} className="text-amber-500 fill-amber-500/20" />
+                                ) : theme === 'dark' ? (
+                                    <Moon size={18} className="text-indigo-400 fill-indigo-400/20" />
+                                ) : theme === 'schedule' ? (
+                                    <Clock size={18} className="text-teal-400" />
+                                ) : (
+                                    <Laptop size={18} className="text-zinc-300" />
+                                )}
+                            </button>
+
+                            {isThemeDropdownOpen && (
+                                <div className="absolute top-11 right-0 w-48 bg-[#202020] border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-3 py-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+                                        Giao diện
+                                    </div>
+                                    <ul className="space-y-0.5 px-1.5 mt-1">
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('system');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'system' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Laptop size={14} />
+                                                <span>Hệ thống</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('light');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'light' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Sun size={14} className="text-amber-500" />
+                                                <span>Giao diện Sáng</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('dark');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'dark' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Moon size={14} className="text-indigo-400" />
+                                                <span>Giao diện Tối</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('schedule');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'schedule' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Clock size={14} className="text-teal-400" />
+                                                <span>Tự động theo giờ</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="text-right">
                             <p className="text-xs font-bold">{staff.name}</p>
                             <p className="text-[10px] font-bold text-red-500 uppercase">Nhân viên kiểm duyệt</p>
@@ -479,52 +654,169 @@ export default function StaffPage() {
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
-                                {reports.map((report) => (
-                                    <div key={report._id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-6 hover:border-white/10 transition-all group animate-in slide-in-from-bottom-2 duration-300">
-                                        <div className="w-48 aspect-video bg-black rounded-xl overflow-hidden relative flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
-                                            {report.videoThumbnail ? (
-                                                <img src={report.videoThumbnail.startsWith('http') ? report.videoThumbnail : `http://127.0.0.1:5000${report.videoThumbnail}`} className="w-full h-full object-cover opacity-80" alt="" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
-                                                    <Flag size={24} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 uppercase tracking-wider">
-                                                    {report.reason}
-                                                </span>
-                                                <span className="text-[10px] text-white/20 uppercase tracking-widest">{new Date(report.createdAt).toLocaleString('vi-VN')}</span>
+                                {reports.map((report) => {
+                                    const isChannel = report.type === 'channel';
+                                    return (
+                                        <div key={report._id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-6 hover:border-white/10 transition-all group animate-in slide-in-from-bottom-2 duration-300">
+                                            <div className={`bg-black overflow-hidden relative flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500 ${isChannel ? 'w-20 h-20 rounded-full border border-white/10' : 'w-48 aspect-video rounded-xl'}`}>
+                                                {isChannel ? (
+                                                    <img 
+                                                        src={report.channelAvatar ? (report.channelAvatar.startsWith('http') ? report.channelAvatar : `http://127.0.0.1:5000${report.channelAvatar}`) : '/assets/img/avata.jpg'} 
+                                                        className="w-full h-full object-cover opacity-80" 
+                                                        alt="" 
+                                                    />
+                                                ) : report.videoThumbnail ? (
+                                                    <img 
+                                                        src={report.videoThumbnail.startsWith('http') ? report.videoThumbnail : `http://127.0.0.1:5000${report.videoThumbnail}`} 
+                                                        className="w-full h-full object-cover opacity-80" 
+                                                        alt="" 
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-white/10 bg-zinc-950">
+                                                        <Flag size={24} />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <h3 className="text-lg font-bold truncate mb-1 text-white">{report.videoTitle || 'Video không khả dụng'}</h3>
-                                            <p className="text-xs text-white/40 mb-2">Người báo cáo: <span className="text-white/60 font-semibold">{report.reporter?.name || report.reporter?.username || 'Ẩn danh'}</span></p>
-                                        </div>
 
-                                        <div className="flex items-center gap-3 self-end md:self-center">
-                                            <button 
-                                                onClick={() => handleResolveReport(report._id, 'KEEP_VIDEO')}
-                                                disabled={isActionLoading === report._id}
-                                                className="px-5 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2"
-                                            >
-                                                <ShieldCheck size={16} /> Giữ lại video
-                                            </button>
-                                            <button 
-                                                onClick={() => handleResolveReport(report._id, 'DELETE_VIDEO')}
-                                                disabled={isActionLoading === report._id}
-                                                className="px-5 py-3 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 flex items-center gap-2"
-                                            >
-                                                <XCircle size={16} /> Xóa video
-                                            </button>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    {isChannel ? (
+                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider">
+                                                            Kênh
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">
+                                                            Video
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 uppercase tracking-wider">
+                                                        {report.reason}
+                                                    </span>
+                                                    <span className="text-[10px] text-white/20 uppercase tracking-widest">{new Date(report.createdAt).toLocaleString('vi-VN')}</span>
+                                                </div>
+                                                <h3 className="text-lg font-bold truncate mb-1 text-white">
+                                                    {isChannel ? report.channelName : (report.videoTitle || 'Video không khả dụng')}
+                                                </h3>
+                                                <p className="text-xs text-white/40 mb-2">Người báo cáo: <span className="text-white/60 font-semibold">{report.reporter?.name || report.reporter?.username || 'Ẩn danh'}</span></p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 self-end md:self-center">
+                                                <button 
+                                                    onClick={() => handleResolveReport(report._id, isChannel ? 'KEEP_CHANNEL' : 'KEEP_VIDEO')}
+                                                    disabled={isActionLoading === report._id}
+                                                    className="px-5 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <ShieldCheck size={16} /> {isChannel ? 'Giữ lại kênh' : 'Giữ lại video'}
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleResolveReport(report._id, isChannel ? 'DELETE_CHANNEL' : 'DELETE_VIDEO')}
+                                                    disabled={isActionLoading === report._id}
+                                                    className="px-5 py-3 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <XCircle size={16} /> {isChannel ? 'Xóa kênh' : 'Xóa video'}
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {reports.length === 0 && (
                                     <div className="py-24 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
                                         <ShieldCheck size={48} className="text-white/5 mx-auto mb-4 animate-pulse" />
                                         <p className="text-white/20 italic">Tuyệt vời! Không có báo cáo vi phạm nào chưa xử lý.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'lives' && (
+                        <div className="animate-in fade-in duration-500">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-2xl font-bold italic uppercase">Kiểm duyệt Live Stream</h2>
+                                <span className="bg-white/5 px-4 py-2 rounded-lg text-xs font-bold text-white/40">
+                                    {activeStreams.length} Kênh đang Live
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                {activeStreams.map((stream) => (
+                                    <div key={stream._id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col gap-6 hover:border-white/10 transition-all">
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-zinc-900 flex-shrink-0">
+                                                    <img src={stream.streamerAvatar || '/assets/img/avata.jpg'} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                                        <span>{stream.title}</span>
+                                                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping flex-shrink-0" />
+                                                    </h3>
+                                                    <p className="text-xs text-white/40 mt-1">Kênh: <span className="text-white/70 font-semibold">{stream.streamerName}</span> | Người phát: <span className="text-white/70 font-semibold">{stream.streamerId}</span></p>
+                                                </div>
+                                            </div>
+
+                                            {/* Action button */}
+                                            <button 
+                                                onClick={() => handleForceEndStream(stream._id)}
+                                                disabled={isLiveActionLoading === stream._id}
+                                                className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-lg shadow-red-600/10 flex-shrink-0"
+                                            >
+                                                <Power size={14} /> Dừng phát ngay lập tức
+                                            </button>
+                                        </div>
+
+                                        {/* Stream stats metrics */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/[0.01] border border-white/5 text-xs">
+                                            <div>
+                                                <p className="text-white/40 uppercase font-black text-[9px] mb-1">Đang xem</p>
+                                                <p className="text-sm font-bold text-white">{stream.viewerCount || 0} người xem</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-white/40 uppercase font-black text-[9px] mb-1">Thích (Like)</p>
+                                                <p className="text-sm font-bold text-amber-400">{stream.likeCount || 0} lượt thích</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-white/40 uppercase font-black text-[9px] mb-1">Doanh thu Live</p>
+                                                <p className="text-sm font-bold text-green-500">{(stream.earnings || 0).toLocaleString('vi-VN')} VNĐ</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-white/40 uppercase font-black text-[9px] mb-1">Ngày bắt đầu</p>
+                                                <p className="text-sm font-bold text-blue-400">{new Date(stream.createdAt).toLocaleTimeString('vi-VN')} {new Date(stream.createdAt).toLocaleDateString('vi-VN')}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Báo cáo vi phạm chi tiết */}
+                                        {stream.reports && stream.reports.length > 0 ? (
+                                            <div className="border border-red-500/20 bg-red-950/10 p-5 rounded-xl space-y-3">
+                                                <p className="text-[10px] font-black text-red-500 uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                                                    <AlertCircle size={12} /> Cảnh báo: Có {stream.reports.length} báo cáo vi phạm phòng live này
+                                                </p>
+                                                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                                    {stream.reports.map((rep: any, idx: number) => (
+                                                        <div key={idx} className="p-3 bg-red-500/5 rounded-lg border border-red-500/10 text-xs text-white/80">
+                                                            <div className="flex items-center justify-between mb-1 text-[10px] text-white/40">
+                                                                <span>Bởi: <b>{rep.reporterName}</b> ({rep.reporterId})</span>
+                                                                <span>{new Date(rep.createdAt).toLocaleTimeString('vi-VN')}</span>
+                                                            </div>
+                                                            <p className="text-red-300 font-bold mb-1">Lý do: {rep.reason}</p>
+                                                            {rep.content && <p className="italic text-white/60">"{rep.content}"</p>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-green-500/60 italic flex items-center gap-1.5">
+                                                <ShieldCheck size={12} /> Phòng live an toàn, chưa có báo cáo vi phạm nào.
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {activeStreams.length === 0 && (
+                                    <div className="py-24 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
+                                        <Radio size={48} className="text-white/5 mx-auto mb-4 animate-pulse" />
+                                        <p className="text-white/20 italic">Hiện không có phòng Live Stream nào đang phát sóng.</p>
                                     </div>
                                 )}
                             </div>

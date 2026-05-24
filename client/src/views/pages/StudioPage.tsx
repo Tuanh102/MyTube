@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Video, Tv, Layout, Settings, Trash2, Edit2, PlayCircle, BarChart2, Users, MessageSquare, Eye, Search, ThumbsUp, ThumbsDown, Calendar, HelpCircle, Send, Zap, ShieldCheck } from 'lucide-react';
+import { Plus, Video, Tv, Layout, Settings, Trash2, Edit2, PlayCircle, BarChart2, Users, MessageSquare, Eye, Search, ThumbsUp, ThumbsDown, Calendar, HelpCircle, Send, Zap, ShieldCheck, ArrowUpCircle, ArrowDownCircle, DollarSign, CreditCard } from 'lucide-react';
 import { toggleCommentInteraction } from '@/lib/actions';
 
 import CreateChannelModal from '../components/modals/CreateChannelModal';
@@ -73,6 +73,11 @@ export default function StudioPage() {
     bankAccount: '',
     bankAccountHolder: '',
   });
+
+  // Deposit State
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [isSubmittingDeposit, setIsSubmittingDeposit] = useState(false);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -387,6 +392,47 @@ export default function StudioPage() {
     }
   };
 
+  const handleSubmitDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.id) return;
+    const amountNum = Number(depositAmount);
+
+    if (!amountNum || amountNum < 1000) {
+      alert('Số tiền nạp phải tối thiểu là 1.000 VNĐ!');
+      return;
+    }
+
+    setIsSubmittingDeposit(true);
+    try {
+      const res = await fetch('/api/payments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountNum,
+          videoId: `DEPOSIT_${amountNum}`,
+          userId: session.user.id,
+          description: `Nap tien ${amountNum} VNĐ`
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.message || data.error || 'Không thể khởi tạo thanh toán PayOS');
+      }
+
+      if (data.checkoutUrl) {
+        router.push(data.checkoutUrl);
+      } else {
+        throw new Error('Không nhận được liên kết thanh toán từ PayOS');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Có lỗi xảy ra trong quá trình kết nối cổng thanh toán.');
+    } finally {
+      setIsSubmittingDeposit(false);
+    }
+  };
+
   const handleDeleteChannel = async (channelId: number) => {
     if (!confirm('Bạn có chắc chắn muốn xóa kênh này? Tất cả video thuộc kênh này cũng sẽ bị ẩn hoặc xóa. Thao tác này không thể hoàn tác.')) return;
     try {
@@ -576,7 +622,7 @@ export default function StudioPage() {
                       <div className="text-2xl font-bold text-white/20 w-8 text-center">{index + 1}</div>
                       <div className="w-32 aspect-video bg-black rounded-lg overflow-hidden relative flex-shrink-0">
                         <img src={getUploadUrl(video.thumbnail_url)} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="" />
-                        <div className="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-[10px] font-bold text-white z-10">{formatDuration(video.duration || 0)}</div>
+                        <div className="absolute bottom-1 right-1 px-1 rounded text-[10px] font-bold z-10" style={{ color: '#ffffff', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>{formatDuration(video.duration || 0)}</div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-bold line-clamp-1 group-hover:text-red-500 transition">{video.title}</p>
@@ -647,7 +693,7 @@ export default function StudioPage() {
                         <div className="flex gap-4">
                           <div className="w-32 aspect-video bg-black rounded-lg overflow-hidden relative">
                             <img src={getUploadUrl(video.thumbnail_url)} className="w-full h-full object-cover" alt="" />
-                            <div className="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-[10px] font-bold text-white z-10">{formatDuration(video.duration || 0)}</div>
+                            <div className="absolute bottom-1 right-1 px-1 rounded text-[10px] font-bold z-10" style={{ color: '#ffffff', backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>{formatDuration(video.duration || 0)}</div>
                           </div>
                           <div className="flex-1">
                             <p className="text-white font-medium line-clamp-2">{video.title}</p>
@@ -848,9 +894,10 @@ export default function StudioPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-gradient-to-br from-green-600/20 to-zinc-900 border border-green-500/20 rounded-3xl p-8 relative overflow-hidden">
                 <div className="relative z-10">
-                  <p className="text-green-500 font-bold mb-2 flex items-center gap-2"><div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />Số dư khả dụng</p>
+                  <div className="text-green-500 font-bold mb-2 flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />Số dư khả dụng</div>
                   <h2 className="text-5xl font-black text-white mb-8 tracking-tighter">{overviewData?.summary.balance?.toLocaleString('vi-VN')} <span className="text-2xl text-white/40">VNĐ</span></h2>
                   <div className="flex flex-wrap gap-4">
+                    <button onClick={() => setShowDepositModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-2xl transition shadow-lg shadow-blue-600/20 flex items-center gap-2 active:scale-95"><ArrowUpCircle size={20} /> Nạp tiền</button>
                     <button onClick={() => setShowWithdrawModal(true)} className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-2xl transition shadow-lg shadow-green-600/20 flex items-center gap-2 active:scale-95"><Plus size={20} /> Rút tiền</button>
                     <button onClick={fetchWithdrawals} className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-2xl transition border border-white/10 flex items-center gap-2">Tải lại lịch sử</button>
                   </div>
@@ -1172,6 +1219,72 @@ export default function StudioPage() {
                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-900 text-white font-black py-4 rounded-2xl transition shadow-xl shadow-green-600/10 flex items-center justify-center gap-3 uppercase tracking-widest text-xs mt-6"
               >
                 {isSubmittingWithdraw ? 'Đang xử lý...' : 'Xác nhận rút tiền'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Deposit Modal */}
+      {showDepositModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl max-w-lg w-full p-8 relative shadow-2xl animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setShowDepositModal(false)}
+              className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors text-sm font-bold"
+            >
+              Hủy bỏ
+            </button>
+            
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <ArrowUpCircle size={20} className="text-blue-500" /> Nạp tiền vào ví MyTube
+            </h3>
+            <p className="text-white/40 text-xs mb-6">Số tiền nạp sẽ được chuyển đổi 100% thành tiền ảo trong ví và thanh toán qua cổng PayOS an toàn.</p>
+
+            <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 mb-6 flex justify-between items-center">
+              <div>
+                <p className="text-blue-500 text-xs font-bold uppercase tracking-wider mb-0.5">Quy đổi tỉ lệ</p>
+                <p className="text-white/40 text-[10px]">1 VNĐ nạp thực = 1 VNĐ ví số dư ảo</p>
+              </div>
+              <p className="text-lg font-black text-white">100% Tức thì</p>
+            </div>
+
+            <form onSubmit={handleSubmitDeposit} className="space-y-5">
+              <div>
+                <label className="text-[10px] font-black text-white/40 uppercase mb-2 block tracking-wider">Số tiền nạp (VNĐ)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="Nhập số tiền muốn nạp..."
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-blue-500 transition text-lg"
+                    required
+                    min={1000}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1.5">
+                    <span className="text-zinc-500 text-sm font-bold pr-2">VNĐ</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2.5">
+                  {[20000, 50000, 100000, 200000, 500000].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setDepositAmount(String(val))}
+                      className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white/60 hover:text-white rounded-xl px-3 py-1.5 text-xs transition"
+                    >
+                      {val.toLocaleString('vi-VN')}đ
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSubmittingDeposit}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 text-white font-black py-4 rounded-2xl transition shadow-xl shadow-blue-600/10 flex items-center justify-center gap-3 uppercase tracking-widest text-xs mt-6"
+              >
+                {isSubmittingDeposit ? 'Đang xử lý...' : 'Đi đến trang thanh toán PayOS'}
               </button>
             </form>
           </div>

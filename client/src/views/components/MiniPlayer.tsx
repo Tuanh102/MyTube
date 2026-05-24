@@ -14,7 +14,10 @@ export default function MiniPlayer() {
     miniPlayerTime,
     isPlaying,
     setIsPlaying,
-    setIsMiniPlayerActive
+    setIsMiniPlayerActive,
+    isAdActive,
+    setIsAdActive,
+    adCountdownGlobal
   } = useUI();
   const router = useRouter();
   const pathname = usePathname();
@@ -41,14 +44,16 @@ export default function MiniPlayer() {
         // Đồng bộ thời gian NGAY LẬP TỨC
         videoRef.current.currentTime = miniPlayerTime;
         
-        // Cố gắng phát lại nếu đang ở trạng thái Playing
-        if (isPlaying) {
+        // Cố gắng phát lại nếu đang ở trạng thái Playing và quảng cáo KHÔNG active
+        if (isPlaying && !isAdActive) {
             videoRef.current.play().catch(() => {
                 console.log("Auto-play blocked by browser");
             });
+        } else {
+            videoRef.current.pause();
         }
     }
-  }, [isWatchPage, isShortsPage, activeVideo?.video_id, isPlaying]);
+  }, [isWatchPage, isShortsPage, activeVideo?.video_id, isPlaying, isAdActive]);
 
 
   const handleDragStart = (e: React.MouseEvent) => {
@@ -139,7 +144,7 @@ export default function MiniPlayer() {
 
   return (
     <div 
-      className={`fixed z-[9999] shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-black group select-none hover:shadow-red-500/20 ${!isDragging ? 'transition-all duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275)' : ''}`}
+      className={`fixed z-[9999] shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-black group select-none hover:shadow-red-500/20 dark-keep ${!isDragging ? 'transition-all duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275)' : ''}`}
       style={{ 
         bottom: '24px', 
         right: '24px',
@@ -150,7 +155,7 @@ export default function MiniPlayer() {
       }}
     >
       <div 
-        className="absolute inset-0 z-10 cursor-move" 
+        className="absolute inset-0 z-10 cursor-move"
         onMouseDown={handleDragStart}
       ></div>
 
@@ -168,45 +173,131 @@ export default function MiniPlayer() {
         onPause={() => setIsPlaying(false)}
       />
 
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-3 z-20 pointer-events-none">
-        <div className="flex justify-between items-start pointer-events-auto">
-            <button 
-                onClick={(e) => { e.stopPropagation(); closeMiniPlayer(); }} 
-                className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-red-500 transition-colors"
-            >
-                <X size={16} />
-            </button>
-            <div className="flex gap-2">
-                <button 
-                    onClick={toggleMute}
-                    className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition"
-                >
-                    {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-                <button 
-                    onClick={(e) => { e.stopPropagation(); handleMaximize(); }} 
-                    className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition"
-                >
-                    <Maximize2 size={16} />
-                </button>
-            </div>
-        </div>
+      {/* CHỈ hiển thị bảng điều khiển video thông thường khi KHÔNG có quảng cáo đang phát */}
+      {!isAdActive && (
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-3 z-20 pointer-events-none">
+          <div className="flex justify-between items-start pointer-events-auto">
+              <button 
+                  onClick={(e) => { e.stopPropagation(); closeMiniPlayer(); }} 
+                  className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-red-500 transition-colors"
+              >
+                  <X size={16} />
+              </button>
+              <div className="flex gap-2">
+                  <button 
+                      onClick={toggleMute}
+                      className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition"
+                  >
+                      {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  </button>
+                  <button 
+                      onClick={(e) => { e.stopPropagation(); handleMaximize(); }} 
+                      className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition"
+                  >
+                      <Maximize2 size={16} />
+                  </button>
+              </div>
+          </div>
 
-        <div className="flex justify-center pointer-events-auto">
-            <button 
-                onClick={togglePlay}
-                className="p-3 bg-white/20 hover:bg-white/40 rounded-full text-white transition backdrop-blur-md scale-90 group-hover:scale-100"
-            >
-                {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
-            </button>
-        </div>
+          <div className="flex justify-center pointer-events-auto">
+              <button 
+                  onClick={togglePlay}
+                  className="p-3 bg-white/20 hover:bg-white/40 rounded-full text-white transition backdrop-blur-md scale-90 group-hover:scale-100"
+              >
+                  {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+              </button>
+          </div>
 
-        <div className="pointer-events-none flex justify-between items-end">
-            <p className="text-white text-[11px] font-medium truncate drop-shadow-lg bg-black/40 px-2 py-0.5 rounded-full max-w-[80%]">
-                {activeVideo.title}
-            </p>
+          <div className="pointer-events-none flex justify-between items-end">
+              <p className="text-white text-[11px] font-medium truncate drop-shadow-lg bg-black/40 px-2 py-0.5 rounded-full max-w-[80%]">
+                  {activeVideo.title}
+              </p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* LỚP PHỦ QUẢNG CÁO PRE-ROLL XANH SM TRÊN MINI PLAYER */}
+      {isAdActive && (
+        <div className="absolute inset-0 z-35 bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300 dark-keep pointer-events-none">
+          <iframe 
+            src="https://www.youtube.com/embed/ZPcCfW4JNO0?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&showinfo=0"
+            className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none"
+            allow="autoplay; encrypted-media"
+            title="Xanh SM Pre-roll Ad"
+          />
+
+          {/* Nhãn hiệu "Ad Xanh SM" góc trên bên trái - chuyển thành link click trực tiếp */}
+          <a 
+            href="https://www.xanhsm.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 flex items-center gap-1.5 z-45 hover:bg-black/85 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer pointer-events-auto"
+          >
+            <span className="bg-white text-zinc-950 font-extrabold text-[8px] px-1 py-0.5 rounded uppercase tracking-wider">
+              Ad
+            </span>
+            <span className="text-white font-bold text-[10px] hover:underline">Xanh SM</span>
+          </a>
+
+          {/* Bộ điều khiển Phóng to & Đóng ở góc trên bên phải của quảng cáo */}
+          <div className="absolute top-2 right-2 flex gap-1.5 z-50 pointer-events-auto">
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                e.preventDefault(); 
+                handleMaximize(); 
+              }} 
+              className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-all duration-200"
+              title="Phóng to video"
+            >
+              <Maximize2 size={12} />
+            </button>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                e.preventDefault(); 
+                closeMiniPlayer(); 
+              }} 
+              className="p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-red-500 transition-all duration-200"
+              title="Đóng trình phát thu nhỏ"
+            >
+              <X size={12} />
+            </button>
+          </div>
+
+          {/* Nút đếm ngược / Bỏ qua quảng cáo ở góc dưới bên phải */}
+          <div className="absolute bottom-2 right-2 z-45 pointer-events-auto">
+            {adCountdownGlobal > 0 ? (
+              <div className="bg-black/80 backdrop-blur-md px-2 py-1.5 rounded border border-white/10 text-white font-medium text-[9px] flex items-center gap-1 shadow-2xl">
+                <span className="w-3.5 h-3.5 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-black text-white animate-pulse">
+                  {adCountdownGlobal}
+                </span>
+                <span>Quảng cáo tắt sau {adCountdownGlobal}s...</span>
+              </div>
+            ) : (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIsAdActive(false);
+                  setIsPlaying(true);
+                  if (videoRef.current) {
+                    videoRef.current.play().catch(err => {
+                      console.log("Play main video on skip failed:", err);
+                    });
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold py-1.5 px-3 rounded border border-white/10 flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer text-[10px] uppercase tracking-wider shadow-2xl"
+              >
+                <span>Bỏ qua quảng cáo</span>
+                <svg className="w-3 h-3 text-white fill-current animate-pulse" viewBox="0 0 24 24">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="absolute bottom-0 left-0 h-1 bg-white/20 w-full z-30">

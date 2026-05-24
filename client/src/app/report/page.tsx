@@ -1,6 +1,6 @@
 import ReportPage from "@/views/pages/ReportPage";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 import { getUserReportsAction } from "@/lib/actions";
 import { redirect } from "next/navigation";
 

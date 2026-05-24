@@ -1,6 +1,6 @@
 import LikesPage from "@/views/pages/LikesPage";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 import { getLikedVideosAction } from "@/lib/actions";
 import { redirect } from "next/navigation";
 

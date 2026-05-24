@@ -6,12 +6,14 @@ import { VideoReport, VideoReportSchema } from './schemas/report.schema';
 import { VideosModule } from '../videos/videos.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Video, VideoSchema } from '../videos/schemas/video.schema';
+import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: VideoReport.name, schema: VideoReportSchema },
-      { name: Video.name, schema: VideoSchema }
+      { name: Video.name, schema: VideoSchema },
+      { name: Channel.name, schema: ChannelSchema }
     ]),
     VideosModule,
     NotificationsModule

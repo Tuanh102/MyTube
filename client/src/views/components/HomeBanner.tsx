@@ -39,7 +39,7 @@ export default function HomeBanner() {
   }, [lastIndex]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px]">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px] dark-keep">
       {/* Shortened Banner Carousel (2/3 Width on Desktop) */}
       <div className="relative md:col-span-8 h-[180px] md:h-full rounded-2xl overflow-hidden group shadow-lg border border-white/5">
         {banners.map((banner, index) => {

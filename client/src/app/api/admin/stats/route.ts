@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../auth/[...nextauth]/options';
 
 export async function GET() {
     // Chúng ta có thể kiểm tra session admin ở đây nếu cần bảo mật hơn

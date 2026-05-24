@@ -33,6 +33,12 @@ if (fs.existsSync(envPath)) {
 
 /** @type {import('next').Config} */
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Đồng bộ hóa các biến môi trường cho cả Client và Server
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,

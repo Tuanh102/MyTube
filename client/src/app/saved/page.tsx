@@ -1,6 +1,6 @@
 import SavedPage from "@/views/pages/SavedPage";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/options";
 import { getUserPlaylistsAction } from "@/lib/actions";
 import { redirect } from "next/navigation";
 

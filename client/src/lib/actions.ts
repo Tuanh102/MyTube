@@ -1,7 +1,7 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
@@ -213,6 +213,22 @@ export async function submitVideoReportAction(videoId: string, userId: string, r
         return data;
     } catch (err) {
         console.error("Action error submitVideoReportAction:", err);
+        return { success: false, error: String(err) };
+    }
+}
+
+export async function submitChannelReportAction(channelId: string, userId: string, reason: string) {
+    console.log(`Action: submitChannelReportAction channelId=${channelId}, userId=${userId}, reason=${reason}`);
+    try {
+        const res = await fetch(`${API_URL}/reports`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelId, userId, reason })
+        });
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        console.error("Action error submitChannelReportAction:", err);
         return { success: false, error: String(err) };
     }
 }

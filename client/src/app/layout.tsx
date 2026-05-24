@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "@/views/components/Providers";
 import MainLayout from "@/views/components/MainLayout";
 import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "./api/auth/[...nextauth]/options";
 
 const outfit = Outfit({
   subsets: ["latin", "latin-ext"],

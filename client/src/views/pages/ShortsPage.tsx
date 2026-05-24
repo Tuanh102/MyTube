@@ -260,9 +260,7 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
 
   return (
     <div className="relative h-[calc(100vh-5rem)] -m-4 overflow-hidden">
-      <Link href="/" className="absolute top-4 left-4 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition">
-        <ArrowLeft size={24} />
-      </Link>
+
 
       <div 
         ref={containerRef}
@@ -277,7 +275,7 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
             {/* Wrapper to hold video and sidebar side by side */}
             <div className="flex h-full max-h-full py-4 items-end gap-4 relative">
               {/* Video Container */}
-              <div className="relative h-full aspect-[9/16] bg-zinc-900 shadow-2xl rounded-2xl overflow-hidden cursor-pointer" onClick={() => togglePlay(short.video_id)}>
+              <div className="relative h-full aspect-[9/16] bg-zinc-900 shadow-2xl rounded-2xl overflow-hidden cursor-pointer dark-keep" onClick={() => togglePlay(short.video_id)}>
                 <video 
                   ref={el => { if (el) videoRefs.current.set(short.video_id, el); }}
                   src={getUploadUrl(short.video_url)}
@@ -392,7 +390,7 @@ export default function ShortsPage({ shorts, user }: ShortsPageProps) {
 
       {/* Comment Sliding Drawer */}
       <div 
-        className={`absolute top-0 right-0 h-full w-[450px] bg-zinc-900 border-l border-white/10 flex flex-col transition-transform duration-300 z-50 shadow-2xl ${activeCommentsVideoId ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`comments-drawer absolute top-0 right-0 h-full w-[450px] bg-zinc-900 border-l border-white/10 flex flex-col transition-transform duration-300 z-50 shadow-2xl ${activeCommentsVideoId ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-white font-bold text-lg">Bình luận</h2>
