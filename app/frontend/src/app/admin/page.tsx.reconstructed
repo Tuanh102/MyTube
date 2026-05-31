@@ -1,0 +1,2700 @@
+Line 729: <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-4">Tổng doanh thu mua</p>
+Line 967: placeholder="Tìm theo chủ tài khoản, số TK, người dùng..."
+  "Description": "\"Write script to search all writes in transcript for the chartDataType keywords to find the full original implementation\"",
+  "IsArtifact": "false",
+  "Overwrite": "true",
+  "TargetFile": "\"C:\\\\Users\\\\ASUS\\\\.gemini\\\\antigravity\\\\brain\\\\6efdbdc0-a583-48bd-b7f0-0c683b39fd82\\\\scratch\\\\search_all_writes.py\"",
+  "toolAction": "\"Writing search_all_writes.py file\"",
+  "toolSummary": "\"Write search script for transcript writes\""
+}
+                                            <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-900 dark:text-white">
+                                                {chartDataType === 'revenue' && 'Biểu đồ Doanh thu (10 ngày gần nhất)'}
+                                                {chartDataType === 'users' && 'Biểu đồ Thành viên mới (10 ngày gần nhất)'}
+                                                {chartDataType === 't
+                                        <div className="flex items-center gap-3">
+                                            <Activity size={18} className="text-red-600 animate-pulse" />
+                                            <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-900 dark:text-white">
+                                                {chartDataType === 'revenue' && 'Biểu đồ Doanh thu (10 ngày g
+                                                    {h}%
+                                                </div>
+                                            <p className="text-zinc-500 dark:text-white/30 text-xs italic py-10 text-center">Chưa có giao dịch mua video nào.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. TAB VIDEOS */}
+                        {activeTab === 'videos' && (
+                            <div className="bg-white dark:bg-zinc-900/20 border border-slate-200 dark:border-white/5 rounded-3xl p-8 animate-in fade-in duration-500 shadow-sm dark:shadow-none">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-xl font-bold italic uppercase text-zinc-900 dark:text-white">Quản lý nội dung nền tảng</h3>
+                                        <p className="text-zinc-500 dark:text-white/40 text-xs mt-1">Dữ liệu video được tải lên từ Creators trong toàn bộ hệ thống.</p>
+                                    </div>
+                                    <div className="bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 dark:text-white/40">
+                                        Tổng số: {videos.length} videos
+                                    </div>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+                                    </div>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+                                                    onClick={() => setChartDataType(type)}
+
+
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. TAB FINANCE (TRANSACTIONS) */}
+                        {activeTab === 'finance' && (
+                            <div className="space-y-8 animate-in fade-in duration-500">
+                                <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold italic uppercase mb-1">Nhật ký giao dịch</h3>
+                                            <p className="text-white/40 text-xs">Liệt kê tất cả các đơn hàng mua khoá học/video Premium trên MyTub
+  premium_show_avatar_aura?: boolean;
+
+  @Prop({ default: true })
+  premium_show_comment_aura?: boolean;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// MISSING LINE 77
+// MISSING LINE 78
+    return this.paymentsService.getWithdrawalById(id);
+  }
+
+  @Post("withdrawals/:id/approve")
+  async approveWithdrawal(
+    @Param("id") id: string,
+    @Body() body: { method?: string },
+  ) {
+    return this.paymentsService.approveWithdrawal(id, body?.method);
+  }
+
+  @Post("withdrawals/:id/reject")
+  async rejectWithdrawal(
+    @Param("id") id: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.paymentsService.rejectWithdrawal(id, body?.reason);
+  }
+
+  // --- API QUẢN LÝ NGƯỜI DÙNG & HỆ THỐNG ---
+  @Get("users")
+  async getAllUsers() {
+    return this.adminService.getAllUsers();
+  }
+
+  @Get("system-status")
+  async getSystemStatus() {
+    return this.adminService.getSystemStatus();
+  }
+
+  @Get("backup")
+  async getBackup() {
+    return this.adminService.getBackupData();
+  }
+
+  @Post("restore")
+  async restoreBackup(@Body() body: any) {
+    return this.adminService.restoreBackupData(body);
+  }
+
+  @Get("videos")
+  async getAllVideos() {
+    return this.adminService.getAllVideos();
+  }
+
+  @Delete("videos/:id")
+  async deleteVideo(@Param("id") id: string) {
+    return this.adminService.deleteVideo(id);
+  }
+
+  @Get("staff")
+  async getAllStaff() {
+    return this.adminService.getAllStaff();
+  }
+
+  @Get("premium-packages")
+  async getPremiumPackages() {
+    return this.paymentsService.getPremiumPackages();
+  }
+
+  @Put("premium-packages/:key")
+  async updatePremiumPackage(
+    @Param("key") key: string,
+    @Body() body: { name: string; price: number; durationDays: number; description?: string },
+  ) {
+    return this.paymentsService.updatePremiumPackage(key, body);
+  }
+}
+
+// MISSING LINE 148
+// MISSING LINE 149
+// MISSING LINE 150
+// MISSING LINE 151
+// MISSING LINE 152
+// MISSING LINE 153
+// MISSING LINE 154
+// MISSING LINE 155
+// MISSING LINE 156
+// MISSING LINE 157
+// MISSING LINE 158
+// MISSING LINE 159
+// MISSING LINE 160
+// MISSING LINE 161
+// MISSING LINE 162
+// MISSING LINE 163
+// MISSING LINE 164
+// MISSING LINE 165
+// MISSING LINE 166
+// MISSING LINE 167
+// MISSING LINE 168
+// MISSING LINE 169
+            fetchAds();
+            fetchRevenueData();
+        }
+    }, [router]);
+
+    useEffect(() => {
+        if (activeTab === 'ads') {
+            fetchAds();
+            fetchRevenueData();
+        } else if (activeTab === 'comments') {
+            fetchComments();
+        } else if (activeTab === 'verification' || activeTab === 'penalties') {
+            fetchChannels();
+        } else if (activeTab === 'reports' || activeTab === 'copyright') {
+            fetchReports();
+        }
+    }, [activeTab, adSubTab]);
+
+    const fetchRevenueData = async () => {
+        setIsRevenueLoading(true);
+        try {
+            const res = await fetch('/api/ads/revenue', {
+                headers: getStaffHeaders()
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRevenueData(data);
+            }
+        } catch (error) {
+            console.error('Lỗi lấy thống kê doanh thu:', error);
+        } finally {
+    const prefix = adData.slotId || "homepage_main";
+    const uniqueSlotId = `${prefix}_${Date.now()}`;
+    const newAd = new this.adModel({
+      ...adData,
+      slotId: uniqueSlotId,
+      status: adData.status || "DRAFT",
+      paymentStatus: adData.paymentStatus || "PENDING_PAYMENT",
+      views: 0,
+      clicks: 0,
+      spent: 0,
+    });
+    return newAd.save();
+  }
+
+  // Delete an ad slot by slotId
+  async deleteAd(slotId: string): Promise<any> {
+// MISSING LINE 217
+// MISSING LINE 218
+// MISSING LINE 219
+// MISSING LINE 220
+// MISSING LINE 221
+// MISSING LINE 222
+// MISSING LINE 223
+// MISSING LINE 224
+// MISSING LINE 225
+// MISSING LINE 226
+// MISSING LINE 227
+// MISSING LINE 228
+// MISSING LINE 229
+// MISSING LINE 230
+// MISSING LINE 231
+// MISSING LINE 232
+// MISSING LINE 233
+// MISSING LINE 234
+      updatedAt: new Date()
+    });
+    console.log('  - Seeded default global AdSetting (globalAdEnabled = true)');
+
+    const defaultAds = [
+      {
+        slotId: 'homepage_main_1',
+        title: 'Khám phá không gian video mới',
+        description: 'Chào mừng bạn quay lại với MyTube. Trải nghiệm tốc độ và sự mượt mà hoàn toàn mới với Next.js.',
+        mediaUrl: '/assets/img/banner1.jpg',
+        linkUrl: '/',
+        badgeText: 'Nổi bật',
+        isActive: true,
+        isMuted: true,
+        createdAt: new Date(),
+      if (vid && Types.ObjectId.isValid(vid)) {
+        orderObj.videoId = videoMap.get(vid.toString()) || null;
+      } else {
+        // Keep original string (e.g. DEPOSIT_20000 or PREMIUM_MONTH) so the frontend can handle it
+        orderObj.videoId = vid;
+      }
+      return orderObj;
+    });
+  }
+
+  async getAllUsers() {
+    return this.userModel
+      .find()
+      .select("-password") // Don't return password hashes
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async getSystemStatus() {
+    cloudinary.config({
+      cloud_name: this.configService.get("CLOUDINARY_CLOUD_NAME"),
+      api_key: this.configService.get("CLOUDINARY_API_KEY"),
+      api_secret: this.configService.get("CLOUDINARY_API_SECRET"),
+    });
+
+    let cloudinaryStorage = { usage: 0, limit: 0, used_percent: 0 };
+    try {
+      const usage = await cloudinary.api.usage();
+      const storageUsage = usage.storage?.usage || 0;
+      const limit =
+        usage.storage?.limit ||
+        (usage.credits?.limit
+          ? usage.credits.limit * 1024 * 1024 * 1024
+          : 25 * 1024 * 1024 * 1024);
+      const used_percent =
+        typeof usage.storage?.used_percent === "number"
+          ? usage.storage.used_percent
+          : Math.round((storageUsage / limit) * 100);
+
+      cloudinaryStorage = {
+        usage: storageUsage,
+        limit,
+        used_percent,
+      };
+    } catch (err) {
+      console.error("[CLOUDINARY STATS ERROR]:", err);
+    }
+
+    const activeStreamsCount = await this.videoModel.countDocuments({
+      isLive: true,
+    });
+
+    // Sum views
+    const totalViewsRes = await this.videoModel.aggregate([
+      { $group: { _id: null, totalViews: { $sum: "$view_count" } } },
+    ]);
+    const totalViews = totalViewsRes[0]?.totalViews || 0;
+
+    return {
+      cloudinaryStorage,
+      traffic: {
+        totalViews,
+        activeStreams: activeStreamsCount,
+        onlineUsersSimulated: Math.floor(Math.random() * 50) + 120,
+        dailyRequests: totalViews * 3 + 4500,
+      },
+      dbCollections: {
+        users: await this.userModel.countDocuments(),
+        videos: await this.videoModel.countDocuments(),
+        orders: await this.orderModel.countDocuments(),
+        channels: await this.channelModel.countDocuments(),
+        comments: await this.commentModel.countDocuments(),
+      },
+    };
+  }
+
+  async getBackupData() {
+    const users = await this.userModel.find().exec();
+    const videos = await this.videoModel.find().exec();
+    const orders = await this.orderModel.find().exec();
+    const channels = await this.channelModel.find().exec();
+    const comments = await this.commentModel.find().exec();
+    return {
+      users,
+      videos,
+      orders,
+      channels,
+      comments,
+      timestamp: new Date().toISOString(),
+      version: "1.0",
+    };
+  }
+
+  async restoreBackupData(data: any) {
+    if (
+      !data ||
+      !Array.isArray(data.users) ||
+      !Array.isArray(data.videos) ||
+      !Array.isArray(data.orders)
+    ) {
+      throw new Error(
+seedDatabase();
+
+// MISSING LINE 353
+// MISSING LINE 354
+// MISSING LINE 355
+// MISSING LINE 356
+// MISSING LINE 357
+// MISSING LINE 358
+// MISSING LINE 359
+// MISSING LINE 360
+// MISSING LINE 361
+// MISSING LINE 362
+// MISSING LINE 363
+// MISSING LINE 364
+// MISSING LINE 365
+// MISSING LINE 366
+// MISSING LINE 367
+// MISSING LINE 368
+// MISSING LINE 369
+// MISSING LINE 370
+// MISSING LINE 371
+// MISSING LINE 372
+// MISSING LINE 373
+// MISSING LINE 374
+// MISSING LINE 375
+// MISSING LINE 376
+// MISSING LINE 377
+// MISSING LINE 378
+// MISSING LINE 379
+// MISSING LINE 380
+// MISSING LINE 381
+// MISSING LINE 382
+// MISSING LINE 383
+// MISSING LINE 384
+// MISSING LINE 385
+// MISSING LINE 386
+// MISSING LINE 387
+// MISSING LINE 388
+// MISSING LINE 389
+// MISSING LINE 390
+// MISSING LINE 391
+// MISSING LINE 392
+// MISSING LINE 393
+// MISSING LINE 394
+// MISSING LINE 395
+// MISSING LINE 396
+// MISSING LINE 397
+// MISSING LINE 398
+// MISSING LINE 399
+// MISSING LINE 400
+// MISSING LINE 401
+// MISSING LINE 402
+// MISSING LINE 403
+// MISSING LINE 404
+// MISSING LINE 405
+// MISSING LINE 406
+            alert('Vui lĂ²ng nháº­p lĂ½ do tá»« chá»‘i rĂºt tiá»n.');
+            return;
+        }
+
+        setIsSubmittingAction(true);
+        try {
+            const res = await fetch('/api/admin/withdrawals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'reject',
+                    id: selectedWithdrawal._id,
+                    reason: rejectReason.trim()
+                })
+            });
+
+            if (res.ok) {
+                alert('ÄĂ£ tá»« chá»‘i yĂªu cáº§u rĂºt tiá»n thĂ nh cĂ´ng!');
+                setIsRejecting(false);
+                setRejectReason('');
+                setShowWithdrawalModal(false);
+                setSelectedWithdrawal(null);
+                fetchWithdrawals();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'CĂ³ lá»—i xáº£y ra khi tá»« chá»‘i yĂªu cáº§u.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('KhĂ´ng thá»ƒ káº¿t ná»‘i mĂ¡y chá»§.');
+        } finally {
+            setIsSubmittingAction(false);
+        }
+    };
+
+    // Quick open detail from notifications
+    const handleNotificationClick = (withdrawal: any) => {
+        setSelectedWithdrawal(withdrawal);
+        setActiveTab('withdrawals');
+        setShowWithdrawalModal(true);
+        setShowNotifications(false);
+        setPaymentStep('details');
+    };
+
+    // Filter withdrawals logic
+    const filteredWithdrawals = withdrawals.filter(w => {
+        const matchesStatus = withdrawalFilters === 'ALL' || w.status === withdrawalFilters;
+        const matchesSearch = 
+            w.bankAccount.toLowerCase().includes(withdrawalSearch.toLowerCase()) ||
+            w.bankAccountHolder.toLowerCase().includes(withdrawalSearch.toLowerCase()) ||
+            (w.userId && w.userId.name.toLowerCase().includes(withdrawalSearch.toLowerCase())) ||
+            (w.userId && w.userId.email.toLowerCase().includes(withdrawalSearch.toLowerCase()));
+        return matchesStatus && matchesSearch;
+    });
+
+    if (!admin) return <div className="min-h-screen bg-black"></div>;
+
+    return (
+        <div className="min-h-screen bg-black text-white flex font-sans selection:bg-red-500 selection:text-white">
+            {/* Sidebar Admin */}
+            <aside className="w-20 lg:w-64 border-r border-white/5 flex flex-col z-20 transition-all duration-500 bg-[#070707]">
+                <div className="h-20 flex items-center px-8 border-b border-white/5">
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setActiveTab('overview')}>
+                        <div className="w-7 h-7 bg-red-600 rounded flex items-center justify-center transition-transform group-hover:rotate-12">
+                            <ShieldCheck size={16} className="text
+            { phone: directRegex },
+            { role: directRegex },
+          ],
+        })
+        .limit(15)
+        .exec();
+
+      result.videos = await this.videoModel
+        .find({
+          $or: [
+            { title: { $in: searchTerms.map((t) => new RegExp(t, "i")) } },
+            {
+              description: { $in: searchTerms.map((t) => new RegExp(t, "i")) },
+            },
+          ],
+        })
+        .populate("channel")
+        .limit(15)
+        .exec();
+
+      result.transactions = await this.orderModel
+        .find({
+          $or: [
+            { orderId: directRegex },
+            { paymentMethod: directRegex },
+            { status: directRegex },
+          ],
+        })
+        .limit(15)
+        .exec();
+
+      result.withdrawals = await this.withdrawalModel
+        .find({
+          $or: [
+            { bankAccount: directRegex },
+            { bankAccountHolder: directRegex },
+            { bankName: directRegex },
+            { status: directRegex },
+          ],
+        })
+        .populate("userId", "username email avatar")
+        .limit(15)
+        .exec();
+    }
+
+    return result;
+  }
+
+  async getAllVideos() {
+    return this.videoModel.find().populate("channel").sort({ createdAt: -1 }).exec();
+  }
+
+  async deleteVideo(id: string) {
+    return this.videoModel.findByIdAndDelete(id).exec();
+  }
+
+  async getAllStaff() {
+    return this.adminModel.find({ role: "STAFF" }).sort({ createdAt: -1 }).exec();
+  }
+}
+
+                <header className="h-20 border-b border-white/5 flex items-center justify-between px-10 bg-[#070707] z-10">
+                    <div className="flex items-center gap-4 text-white/40 hover:text-white/60 transition-colors cursor-pointer group">
+                        <Search size={18} />
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Hệ thống an toàn</span>
+                        </div>
+                        
+                        {/* Notifications Bell Section */}
+                        <div className="relative" ref={notificationRef}>
+                            <button 
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="p-2 text-whit
+                        fetchSystemStatus();
+                    } else {
+                        alert('Khôi phục thất bại: ' + (data.error || data.message));
+                    }
+                } catch (parseErr) {
+                    alert('File không hợp lệ hoặc bị lỗi định dạng JSON');
+                } finally {
+                    setIsRestoring(false);
+                }
+            };
+            reader.readAsText(file);
+        } catch (err) {
+            alert('Lỗi đọc file');
+            setIsRestoring(false);
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    const fetchWithdrawals = async () => {
+        try {
+            const res = await fetch('/api/admin/withdrawals');
+            const data = await res.json();
+            if (res.ok && Array.isArray(data)) {
+                setWithdrawals(data);
+            } else {
+// MISSING LINE 571
+// MISSING LINE 572
+// MISSING LINE 573
+// MISSING LINE 574
+// MISSING LINE 575
+// MISSING LINE 576
+// MISSING LINE 577
+// MISSING LINE 578
+// MISSING LINE 579
+// MISSING LINE 580
+// MISSING LINE 581
+// MISSING LINE 582
+// MISSING LINE 583
+// MISSING LINE 584
+// MISSING LINE 585
+// MISSING LINE 586
+// MISSING LINE 587
+// MISSING LINE 588
+// MISSING LINE 589
+// MISSING LINE 590
+// MISSING LINE 591
+// MISSING LINE 592
+// MISSING LINE 593
+// MISSING LINE 594
+// MISSING LINE 595
+// MISSING LINE 596
+// MISSING LINE 597
+// MISSING LINE 598
+// MISSING LINE 599
+// MISSING LINE 600
+// MISSING LINE 601
+// MISSING LINE 602
+// MISSING LINE 603
+// MISSING LINE 604
+// MISSING LINE 605
+// MISSING LINE 606
+// MISSING LINE 607
+// MISSING LINE 608
+// MISSING LINE 609
+// MISSING LINE 610
+// MISSING LINE 611
+// MISSING LINE 612
+// MISSING LINE 613
+// MISSING LINE 614
+// MISSING LINE 615
+// MISSING LINE 616
+// MISSING LINE 617
+// MISSING LINE 618
+// MISSING LINE 619
+// MISSING LINE 620
+// MISSING LINE 621
+// MISSING LINE 622
+// MISSING LINE 623
+// MISSING LINE 624
+// MISSING LINE 625
+// MISSING LINE 626
+                                        Giao diện
+                                    </div>
+                                    <ul className="space-y-0.5 px-1.5 mt-1">
+                <div className="p-4 border-t border-slate-200 dark:border-red-950/10 overflow-hidden relative z-10">
+                    <button onClick={handleLogout} className="w-full flex items-center gap-4 px-3.5 py-3 text-zinc-400 hover:text-red-500 transition-all font-bold text-sm">
+                        <LogOut size={18} className="flex-shrink-0" />
+                        <span className="transition-opacity duration-300 opacity-0 group-hover:opacity-100 whitespace-nowrap">Đăng xuất</span>
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Area */}
+            <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-black/20 backdrop-blur-sm transition-colors duration-300 relative z-10">
+                <header className="h-20 border-b border-slate-200 dark:border-red-950/10 flex items-center justify-between px-10 bg-white/80 dark:bg-[#090909]/80 backdrop-blur-md transition-colors duration-300">
+                    <div className="flex items-center gap-4 text-zinc-400 dark:text-white/40 hover:text-zinc-650 dark:hover:text-white/60 transition-colors cursor-pointer group">
+                        <Search size={18} />
+                        <span className="text-sm font-medium hidden md:block">Tìm kiếm mọi thứ...</span>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+             
+                                                    setTheme('light');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'light' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <Sun size={14} className="text-amber-500" />
+                                                <span>Giao diện Sáng</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('dark');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'dark' 
+                                                        ? 'bg-white/10 
+    if (!video) return { success: false };
+
+    const isDisliked = video.dislikes
+      .map((id) => id.toString())
+      .includes(userId);
+
+    if (isDisliked) {
+      // Un-dislike
+      await this.videoModel.findByIdAndUpdate(id, {
+    };
+
+    if (!staff) return <div className="min-h-screen bg-slate-50 dark:bg-black transition-colors duration-300"></div>;
+
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#020202] text-zinc-800 dark:text-zinc-100 flex font-sans selection:bg-rose-600 selection:text-white transition-colors duration-300 relative overflow-hidden">
+            {/* Cyber ruby-rose radial glow for Staff operations dashboard */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(225,29,72,0.12),rgba(0,0,0,0)_75%)] pointer-events-none z-0 hidden dark:block"></div>
+
+            {/* Sidebar Staff */}
+            <aside className="w-20 hover:w-64 border-r border-slate-200 dark:border-rose-950/20 flex flex-col z-20 transition-all duration-300 bg-white dark:bg-[#090909]/80 backdrop-blur-md shadow-sm dark:shadow-none group overflow-hidden">
+                <div className="h-20 flex items-center px-6 border-b border-slate-200 dark:border-rose-950/10">
+                    <div className="flex items-center gap-3 group/logo cursor-pointer" onClick={() => setActiveTab('overview')}>
+                        <img 
+                            src="/assets/img/logoMyTube.png" 
+                            alt="MyTube Logo" 
+                            className="h-7 w-auto object-contain transition-transform group-hover/logo:scale-105 flex-shrink-0"
+                        />
+                        <span className="font-black text-lg tracking-tighter tex
+    };
+  }
+
+  async getLikedVideos(userId: string) {
+    try {
+      const userObjId = new Types.ObjectId(userId);
+      const videos = await this.videoModel
+        .find({
+          $or: [{ likes: userId }, { likes: userObjId }],
+        })
+        .populate("channel")
+        .exec();
+
+      return Promise.all(
+        videos.map((video) => this.redactVideoUrl(video, userId)),
+      );
+    } catch (error: any) {
+      return { error: error.message, stack: error.stack };
+    }
+  }
+
+                            <button
+                                onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+                                title="Thay đổi giao diện"
+                                className="p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer flex items-center justify-center border border-white/5"
+                            >
+                                {theme === 'light' ? (
+                                    <Sun size={18} className="text-amber-500 fill-amber-500/20" />
+                                ) : theme === 'dark' ? (
+                                    <Moon size={18} className="text-indigo-400 fill-indigo-400/20" />
+                                ) : theme === 'schedule' ? (
+                                    <Clock size={18} className="text-teal-400" />
+                                ) : (
+                                    <Laptop size={18} className="text-zinc-300" />
+                                )}
+                            </button>
+
+                            {isThemeDropdownOpen && (
+                                <div className="absolute top-11 right-0 w-48 bg-[#202020] border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-3 py-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+                            
+// MISSING LINE 740
+// MISSING LINE 741
+// MISSING LINE 742
+// MISSING LINE 743
+// MISSING LINE 744
+// MISSING LINE 745
+// MISSING LINE 746
+// MISSING LINE 747
+// MISSING LINE 748
+// MISSING LINE 749
+                            activeTab === 'ads' 
+                                ? 'bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-500 shadow-sm dark:shadow-none' 
+                                : 'text-zinc-500 dark:text-white/40 hover:text-zinc-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.02]'
+                        }`}
+                    >
+                        <Megaphone size={18} className="flex-shrink-0" />
+                        <span className="transition-opacity duration-300 opacity-0 group-hover:opacity-100 whitespace-nowrap">Quản lý Quảng cáo</span>
+                    </button>
+                    <button 
+                            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-4">Tổng Creators/Users</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-2xl font-bold tabular-nums">{stats.totalUsers.toLocaleString('vi-VN')}</h3>
+                                <div className="w-8 h-8 bg-red-600/5 rounded-lg flex items-center justify-center">
+                                    <Users size={14} className="text-red-500" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="group bg-white/[0.02] border border-white/5 p-6 rounded-2xl hover:border-red-600/30 transition-all relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-4">Tài nguyên Video</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-2xl font-bold tabular-nums">{stats.totalVideos.toLocaleString('vi-VN')}</h3>
+                                <div className="text-white/20 text-[10px] font-bold">HOáº T Äá»˜NG</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tab Navigation Content Area */}
+                    <div className="w-full">
+                        {/* 1. TAB OVERVIEW */}
+                        {activeTab === 'overview' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                                <div className="lg:col-span-2 bg-white/[0.01] border border-white/5 rounded-3xl p-8 h-[400px] flex flex-col relative">
+                                    <div className="flex items-center justify-between mb-10">
+                                        <div className="flex items-center gap-3">
+                                            <Activity size={18} className="text-red-600" />
+                                            <h4 className="font-bold text-sm uppercase tracking-wider">Luá»“ng hoáº¡t Ä‘á»™ng há»‡ thá»‘ng</h4>
+                                        </div>
+                                        <div className="flex bg-white/5 p-1 rounded-lg">
+                                            <button className="px-3 py-1 text-[10px] font-bold bg-white/10 rounded-md">Realtime</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 flex items-end gap-1.5 px-2">
+                                        {[30, 45, 40, 65, 80, 50, 75, 90, 85, 70, 95, 100, 85, 70, 60, 50, 40, 65, 80, 50, 75, 90, 85].map((h, i) => (
+    
+                                                    theme === 'schedule' 
+                                                        ? 'bg-white/10 text-white font-semibold' 
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  
+                                            >
+                                                <Clock size={14} className="text-teal-400" />
+                                                <span>Tự động theo giờ</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 pl-6 border-l border-white/5">
+                            <div className="text-right">
+                                <p className="text-xs font-bold">{admin.name}</p>
+                                <p className="text-[10px] font-bold text-red-500 uppercase">Quản trị viên</p>
+                            </div>
+                            <img src={admin.avatar_url || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-white/10 object-cover" alt="" />
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                    <div className="flex items-center justify-between mb-10">
+                        <div>
+                            <h2 className="text-3xl font-bold tracking-tight mb-1 italic uppercase flex items-center gap-2">
+                                                    onClick={() => setChartDataType(type)}
+
+            {/* Main Area */}
+            <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-[#0a0a0a] transition-colors duration-300">
+                <header className="h-20 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-10 bg-white dark:bg-black transition-colors duration-300">
+                    <div 
+                        onClick={() => {
+                            setIsSmartSearchOpen(true);
+                            setSmartSearchQuery('');
+                            setSmartSearchResults({ tickets: [], videos: [], comments: [] });
+                        }}
+                        className="flex items-center gap-4 bg-slate-50 dark:bg-white/[0.02] px-4 py-2 rounded-lg border border-slate-200 dark:border-white/5 w-[300px] cursor-pointer hover:border-red-500/30 transition-all group"
+                    >
+                        <Search size={16} className="text-zinc-400 dark:text-white/20 group-hover:text-red-500 transition-colors" />
+                        <span className="text-xs text-zinc-400 dark:text-white/30 select-none">Tìm kiếm thông minh...</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        {/* Nút cài đặt giao diện Đa Chế Độ */}
+                        <div className="relative" ref={themeDropdownRef}>
+                            <button
+                                    <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold italic uppercase mb-1">Nháº­t kĂ½ giao dá»‹ch</h3>
+                                            <p className="text-white/40 text-xs">Liá»‡t kĂª táº¥t cáº£ cĂ¡c Ä‘Æ¡n hĂ ng mua khoĂ¡ há»c/video Premium trĂªn MyTube.</p>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="border-b border-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
+                                                    <th className="px-8 py-5">MĂ£ Ä‘Æ¡n hĂ ng</th>
+                                                    <th className="px-8 py-5">NgÆ°á»i mua</th>
+                                                    <th className="px-8 py-5">Video / KhoĂ¡ há»c</th>
+                                                    <th className="px-8 py-5 text-right">Tá»•ng tiá»n</th>
+                                                    <th className="px-8 py-5 text-right text-red-500">PhĂ­ sĂ n (10%)</th>
+                                                    <th className="px-8 py-5 text-right">NgĂ y giao dá»‹ch</th>
+// MISSING LINE 861
+// MISSING LINE 862
+// MISSING LINE 863
+// MISSING LINE 864
+// MISSING LINE 865
+// MISSING LINE 866
+// MISSING LINE 867
+// MISSING LINE 868
+// MISSING LINE 869
+// MISSING LINE 870
+// MISSING LINE 871
+// MISSING LINE 872
+// MISSING LINE 873
+// MISSING LINE 874
+// MISSING LINE 875
+// MISSING LINE 876
+// MISSING LINE 877
+                                                            <td className="px-8 py-5 text-right font-bold text-sm text-red-500">{formatVND(order.amount * 0.1)}</td>
+                                                            <td className="px-8 py-5 text-right text-xs text-white/20">
+                                                                {new Date(order.createdAt).toLocaleString('vi-VN')}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={6} className="px-8 py-16 text-center text-white/30 text-xs italic">
+                                                            ChÆ°a cĂ³ báº¥t ká»³ giao dá»‹ch mua hĂ ng nĂ o trĂªn ná»n táº£ng.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4. TAB WITHDRAWALS (DUYá»†T RĂT TIá»€N) */}
+                        {activeTab === 'withdrawals' && (
+                            <div className="space-y-6 animate-in fade-in duration-500">
+
+                        {/* Card 5: Tài nguyên Video */}
+                        <div className="bg-white/[0.02] dark:bg-[#0c0c0c]/60 border border-slate-200 dark:border-red-950/10 rounded-2xl p-6 hover:border-red-500/30 hover:shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all duration-300 relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-600 to-amber-500 opacity-0 group-h
+// MISSING LINE 905
+// MISSING LINE 906
+// MISSING LINE 907
+// MISSING LINE 908
+// MISSING LINE 909
+// MISSING LINE 910
+// MISSING LINE 911
+// MISSING LINE 912
+// MISSING LINE 913
+// MISSING LINE 914
+// MISSING LINE 915
+// MISSING LINE 916
+// MISSING LINE 917
+// MISSING LINE 918
+// MISSING LINE 919
+// MISSING LINE 920
+// MISSING LINE 921
+// MISSING LINE 922
+// MISSING LINE 923
+// MISSING LINE 924
+// MISSING LINE 925
+                                            <Activity size={18} className="text-red-600" />
+                                            <h4 className="font-bold text-sm uppercase tracking-wider">Luồng hoạt động hệ thống</h4>
+                                        </div>
+                                        <div className="flex bg-white/5 p-1 rounded-lg">
+                                            <button className="px-3 py-1 text-[10px] font-bold bg-white/10 rounded-md">Realtime</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 flex items-end gap-1.5 px-2">
+                                        {[30, 45, 40, 65, 80, 50, 75, 90, 85, 70, 95, 100, 85, 70, 60, 50, 40, 65, 80, 50, 75, 90, 85].map((h, i) => (
+                                            <div key={i} className="flex-1 bg-red-600/[0.06] hover:bg-red-600/70 transition-all duration-300 rounded-t-lg relative group/bar" style={{ height: `${h}%` }}>
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1a1a1a] text-[9px] px-1.5 py-0.5 rounded border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity font-mono z-20">
+                                                    {h}%
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/[0.01] border border-white/5 rounded-3xl p-8 flex flex-col">
+                                    <h4 className="font-bold text-sm uppercase tracking-wider mb-8">Giao dịch mua mới nhất</h4>
+                                    <div className="space-y-5 flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[300px]">
+                                        {Array.isArray(transactions) && transactions.length > 0 ? (
+                                            transactions.slice(0, 6).map((order: any) => (
+                                                <div key={order._id} className="flex items-center gap-4 group cursor-pointer border-b border-white/[0.02] pb-4">
+                                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                                                    <div className="flex-1 text-xs">
+                                                        <p className="font-bold text-white group-hover:text-red-500 transition-colors">{order.userId?.name || 'Khách vãng lai'}</p>
+                                                        <p className="text-[10px] text-white/40 mt-0.5">{formatVND(order.amount)} • {new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+                                                    </div>
+                                                    <div className="text-red-500 font-mono text-[10px] font-bold">+{formatVND(order.amount * 0.1)}</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-white/30 text-xs italic py-10 text-center">Chưa có giao dịch mua video nào.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. TAB VIDEOS */}
+                        {activeTab === 'videos' && (
+                            <div className="bg-white/[0.01] border border-white/5 rounded-3xl p-8 animate-in fade-in duration-500">
+                                <h3 className="text-xl font-bold mb-6 italic uppercase">Quản lý nội dung nền tảng</h3>
+                                                    <th className="px-8 py-5 text-right text-red-500">Phí sàn (10%)</th>
+                                                    <th className="px-8 py-5 text-right">Ngày giao dịch</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/[0.02]">
+                                                {Array.isArray(transactions) && transactions.length > 0 ? (
+                                                    transactions.map((order: any) => (
+                                                        <tr key={order._id} className="hover:bg-white/[0.01] transition-colors group">
+                                                            <td className="px-8 py-5 font-mono text-xs text-white/40">#{order.orderCode}</td>
+
+                        {/* 3. TAB FINANCE (TRANSACTIONS) */}
+                        {activeTab === 'finance' && (
+                            <div className="space-y-8 animate-in fade-in duration-500">
+                                <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold italic uppercase mb-1">Nhật ký giao dịch</h3>
+                                            <p className="text-white/40 text-xs">Liệt kê tất cả các đơn hàng mua khoá học/video Premium trên MyTube.</p>
+                                        </div>
+                                    </div>
+                                            <tbody className="divide-y divide-white/[0.02]">
+                                                {filteredWithdrawals.length > 0 ? (
+                                                    filteredWithdrawals.map((withdrawal) => (
+                                                        <tr key={withdrawal._id} className="hover:bg-white/[0.01] transition-colors group">
+                                                            <td className="px-8 py-5">
+                                                                <div className="flex items-center gap-3">
+                                                                    <img src={withdrawal.userId?.avatar || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-white/10 object-cover" alt="" />
+                                                                    <div>
+                                                                        <span className="text-sm font-bold block">{withdrawal.userId?.name || 'Creator áº¨n Danh'}</span>
+                                                                        <span className="text-[10px] text-white/35 block mt-0.5">{withdrawal.userId?.email || 'ChÆ°a Ä‘á»‹nh danh'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-8 py-5">
+                                                                <div className="text-xs">
+                                                                    <div className="flex i
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                                        <p className="font-bold text-zinc-800 dark:text-white group-hover:text-red-500 transition-colors">
+                                                            {withdrawal.userId?.username || 'Creator Ẩn Danh'}
+                                                            </td>
+                                                            <td className="px-8 py-5">
+                                                                <span className="text-sm text-white/60 line-clamp-1 max-w-[250px]">{order.videoId?.title || 'Video đã bị gỡ'}</span>
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right font-bold text-sm">{formatVND(order.amount)}</td>
+                                                            <td className="px-8 py-5 text-right font-bold text-sm text-red-500">{formatVND(order.amount * 0.1)}</td>
+                                                            <td className="px-8 py-5 text-right text-xs text-white/20">
+                                                                {new Date(order.createdAt).toLocaleString('vi-VN')}
+                                                            </td>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={6} className="px-8 py-16 text-center text-white/30 text-xs italic">
+                                                            Chưa có bất kỳ giao dịch mua hàng nào trên nền tảng.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4. TAB WITHDRAWALS (DUYỆT RÚT TIỀN) */}
+                        {activeTab === 'withdrawals' && (
+                            <div className="space-y-6 animate-in fade-in duration-500">
+                                {/* Header stats inside the tab for professional layout */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div className="bg-[#121212] border border-white/5 p-5 rounded-2xl flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+                                            <AlertCircle size={20} />
+                                        </div>
+// MISSING LINE 1046
+// MISSING LINE 1047
+// MISSING LINE 1048
+// MISSING LINE 1049
+// MISSING LINE 1050
+// MISSING LINE 1051
+// MISSING LINE 1052
+// MISSING LINE 1053
+// MISSING LINE 1054
+// MISSING LINE 1055
+// MISSING LINE 1056
+// MISSING LINE 1057
+// MISSING LINE 1058
+// MISSING LINE 1059
+// MISSING LINE 1060
+// MISSING LINE 1061
+                                    <div className="px-3 py-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider select-none">
+                                        Giao diện
+                                    </div>
+                                    <ul className="space-y-0.5 px-1.5 mt-1">
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    setTheme('system');
+                                                    setIsThemeDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition ${
+                                                    theme === 'system' 
+                                                        ? 'bg-slate-100 dark:bg-white/10 text-zinc-950 dark:text-white font-bold' 
+                                                        : 'text-zinc-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white'
+                                                }`}
+                                            >
+                                                <Laptop size={14} />
+                                                <span>Hệ thống</span>
+                                            </button>
+// MISSING LINE 1081
+// MISSING LINE 1082
+                                        />
+                                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-red-500 transition-colors" size={14} />
+                                    </div>
+                                </div>
+
+                                {/* Withdrawals Table Grid */}
+                                <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="border-b border-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
+                                                    <th className="px-8 py-5">Creator</th>
+                                                    <th className="px-8 py-5">Tài khoản đích</th>
+                                                    <th className="px-8 py-5 text-right">Số tiền rút</th>
+                                                    <th className="px-8 py-5">Phương thức</th>
+                                                    <th className="px-8 py-5">Ngày tạo</th>
+                                                    <th className="px-8 py-5">Trạng thái</th>
+                                                    <th className="px-8 py-5 text-right">Hành động</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/[0.02]">
+                                                {filteredWithdrawals.length > 0 ? (
+                                                    filteredWithdrawals.map((withdrawal) => (
+                                                        <tr key={withdrawal._id} className="hover:bg-white/[0.01] transition-colors group">
+                                                            <td className="px-8 py-5">
+                                                                <div className="flex items-center gap-3">
+                                                                    <img src={withdrawal.userId?.avatar || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-white/10 object-cover" alt="" />
+                                                                    <div>
+                                                                        <span className="text-sm font-bold block">{withdrawal.userId?.name || 'Creator Ẩn Danh'}</span>
+                                                                        <span className="text-[10px] text-white/35 block mt-0.5">{withdrawal.userId?.email || 'Chưa định danh'}</span>
+                                                    
+// MISSING LINE 1114
+// MISSING LINE 1115
+// MISSING LINE 1116
+// MISSING LINE 1117
+// MISSING LINE 1118
+// MISSING LINE 1119
+// MISSING LINE 1120
+// MISSING LINE 1121
+// MISSING LINE 1122
+// MISSING LINE 1123
+// MISSING LINE 1124
+// MISSING LINE 1125
+// MISSING LINE 1126
+// MISSING LINE 1127
+// MISSING LINE 1128
+// MISSING LINE 1129
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-white/5">
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-zinc-800 dark:text-white">{admin.name}</p>
+                                <p className="text-[10px] font-bold text-red-600 dark:text-red-500 uppercase">Quản trị viên</p>
+                            </div>
+                            <img src={admin.avatar_url || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-slate-200 dark:border-white/10 object-cover" alt="" />
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                    <div className="flex items-center justify-between mb-10">
+                        <div>
+                            <h2 className="text-3xl font-black tracking-tight mb-1 italic uppercase flex items-center gap-2 text-zinc-900 dark:text-white">
+                                {getGreeting()}, {admin.name.split(' ')[0]}
+                            </h2>
+                            <p className="text-zinc-500 dark:text-white/30 text-sm font-medium">Hệ thống MyTube Studio: <span className="text-green-600 dark:text-green-500 font-black">100% Khả dụng</span></p>
+                        </div>
+                        {activeTab === 'withdrawals' && pendingCount > 0 && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-500 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 animate-pulse shadow-sm">
+                                <AlertCircle size={16} />
+                                <span>Có {pendingCount} yêu cầu rút tiền đang chờ xử lý</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+                        <div className="group bg-white dark:bg-zinc-900/40 border border-slate-200 dark:border-white/5 p-6 rounded-3xl hover:border-red-500/20 transition-all relative overflow-hidden shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-widest mb-4">Tổng doanh thu mua</p>
+// MISSING LINE 1166
+// MISSING LINE 1167
+// MISSING LINE 1168
+// MISSING LINE 1169
+// MISSING LINE 1170
+// MISSING LINE 1171
+// MISSING LINE 1172
+// MISSING LINE 1173
+// MISSING LINE 1174
+                                                                        setPaymentStep('details');
+                                                                    }}
+                                                                    className="bg-white/5 border border-white/10 hover:bg-white/15 text-white/80 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300"
+                                                                >
+                                                                    Chi tiết
+                                                                        <span className="w-1 h-1 bg-yellow-500 rounded-full animate-ping"></span>
+                                                                        Chờ duyệt
+                                                                    </span>
+                                                                )}
+                                                                {withdrawal.status === 'SUCCESS' && (
+                                                                    <span className="inline-flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                                                                        Thành công
+                                                                    </span>
+                                                                )}
+                                                                {withdrawal.status === 'REJECTED' && (
+                                                                    <span 
+                                                                        title={withdrawal.rejectReason} 
+                                                                        className="inline-flex items-center gap-1 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-help"
+                                                                    >
+                                                                        Bị từ chối
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right">
+                                                                <button
+                                                                    onClick={() => { 
+                                                                        setSelectedWithdrawal(withdrawal); 
+                                                                        setShowWithdrawalModal(true); 
+                                                                        setPaymentStep('details');
+                                                                    }}
+                                                                    className="bg-white/5 border border-white/10 hover:bg-white/15 text-white/80 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300"
+                                                                >
+                                                                    Chi tiết
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={7} className="px-8 py-16 text-center text-white/30 text-xs italic">
+                    <div className="w-full">
+                        {/* 1. TAB OVERVIEW */}
+                        {activeTab === 'overview' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                                <div className="lg:col-span-2 bg-white dark:bg-zinc-900/20 border border-slate-200 dark:border-white/5 rounded-3xl p-8 h-[400px] flex flex-col relative shadow-sm dark:shadow-none">
+                                    <div cla
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. TAB SETTINGS */}
+                        {activeTab === 'settings' && (
+                            <div className="bg-white/[0.01] dark:bg-[#0c0c0c]/60 border border-slate-200 dark:border-red-950/10 rounded-3xl p-8 shadow-2xl backdrop-blur-md animate-in fade-in duration-500">
+                                <div className="border-b border-slate-200 dark:border-white/5 pb-6 mb-8">
+                                    <h3 className="text-xl font-bold text-zinc-800 dark:text-white italic uppercase flex items-center gap-2">
+                                        <Settings size={20} className="text-red-500" />
+                                        Thiết lập & Cấu hình Hệ thống
+                                    </h3>
+                                    <p className="text-zinc-500 dark:text-white/40 text-xs mt-1">Cấu hình các tham số vận hành, tài chính và phân quyền trên nền tảng MyTube.</
+                        <button 
+                            onClick={() => {
+                                if (isProcessingAuto) return;
+                                setShowWithdrawalModal(false);
+                                setSelectedWithdrawal(null);
+                                setIsRejecting(false);
+                                setRejectReason('');
+                                setPaymentStep('details');
+                                setCopiedField(null);
+                            }}
+                            disabled={isProcessingAuto}
+                            className="absolute top-6 right-6 p-2 text-white/40 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors disabled:opacity-30"
+                        >
+                            <X size={18} />
+                        </button>
+
+// MISSING LINE 1251
+// MISSING LINE 1252
+// MISSING LINE 1253
+// MISSING LINE 1254
+// MISSING LINE 1255
+// MISSING LINE 1256
+// MISSING LINE 1257
+// MISSING LINE 1258
+// MISSING LINE 1259
+// MISSING LINE 1260
+// MISSING LINE 1261
+// MISSING LINE 1262
+// MISSING LINE 1263
+// MISSING LINE 1264
+// MISSING LINE 1265
+// MISSING LINE 1266
+// MISSING LINE 1267
+// MISSING LINE 1268
+// MISSING LINE 1269
+// MISSING LINE 1270
+// MISSING LINE 1271
+// MISSING LINE 1272
+// MISSING LINE 1273
+// MISSING LINE 1274
+// MISSING LINE 1275
+// MISSING LINE 1276
+// MISSING LINE 1277
+                                        ) : (
+                                            <p className="text-zinc-500 dark:text-white/30 text-xs italic py-10 text-center">Chưa có giao dịch mua video nào.</p>
+                                        )}
+                                    </div>
+                                </div>
+                                    </div>
+                                ) : (
+                                    /* Details View */
+                                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                        {/* Creator and bank details column */}
+                                        <div className="space-y-6">
+                                            <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+                                                <p className="text-white/30 text-[9px] font-bold uppercase tracking-wider mb-3">Tài khoản yêu cầu</p>
+                                                <div className="flex items-center gap-3">
+                                                    <img src={selectedWithdrawal.userId?.avatar || '/assets/img/avata.jpg'} className="w-10 h-10 rounded-full border border-white/10 object-cover" alt="" />
+                                                    <div>
+                                                        <p className="text-sm font-bold text-white">{selectedWithdrawal.userId?.name || 'Creator Ẩn Danh'}</p>
+                                                        <p className="text-xs text-white/40">{selectedWithdrawal.userId?.email || 'no-email@mytube.com'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                                    <span className="block text-xs font-bold text-zinc-700 dark:text-white/60 uppercase">Đăng ký Creator tự động</span>
+                                                    <span className="text-[10px] text-zinc-500 dark:text-white/30 mt-0.5 block">Cho phép thành viên tự do nâng cấp kênh lên Creator không cần phê duyệt.</span>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                                                    <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+                                                </label>
+                                            </div>
+
+                                            <div className="flex items-center justify-between py-2">
+                                                <div>
+                                                    <span className="block text-xs font-bold text-zinc-700 dark:text-white/60 uppercase">Bảo mật 2 lớp (2FA) b
+                                                    <div>
+                                                        <p className="text-white/40 text-[10px]">Số tài khoản nhận</p>
+                                                        <p className="font-mono font-bold text-white text-sm mt
+                                                        <div className="flex items-center gap-3">
+                                                            <img 
+                                                                src={video.thumbnail_url} 
+                                                                className="w-16 aspect-video rounded-lg border border-slate-200 dark:border-white/10 object-cover" 
+                                                                alt="" 
+                                                            />
+                                                            <div>
+                                                                <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1 max-w-[200px]">{video.title}</p>
+                                                                <p className="text-[10px] text-zinc-500 dark:text-white/40">Thời lượng: {video.duration}s</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm text-zinc-600 dark:text-white/60">{video.channel?.channel_name || 'N/A'}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-mono text-zinc-800 dark:text-white">
+                                                        {video.view_count || 0}
+                                          
+                                            <p className="text-xs font-black text-zinc-800 dark:text-white tracking-wide">CÔNG TẮC TỔNG (MASTER SWITCH)</p>
+                                            <p className="text-[10px] text-zinc-500 dark:text-white/20 mt-0.5 font-bold">Bật/tắt tất 
+// MISSING LINE 1335
+// MISSING LINE 1336
+// MISSING LINE 1337
+// MISSING LINE 1338
+// MISSING LINE 1339
+// MISSING LINE 1340
+// MISSING LINE 1341
+// MISSING LINE 1342
+// MISSING LINE 1343
+// MISSING LINE 1344
+// MISSING LINE 1345
+// MISSING LINE 1346
+// MISSING LINE 1347
+// MISSING LINE 1348
+// MISSING LINE 1349
+// MISSING LINE 1350
+// MISSING LINE 1351
+// MISSING LINE 1352
+// MISSING LINE 1353
+// MISSING LINE 1354
+// MISSING LINE 1355
+// MISSING LINE 1356
+// MISSING LINE 1357
+// MISSING LINE 1358
+// MISSING LINE 1359
+// MISSING LINE 1360
+// MISSING LINE 1361
+// MISSING LINE 1362
+// MISSING LINE 1363
+// MISSING LINE 1364
+// MISSING LINE 1365
+// MISSING LINE 1366
+// MISSING LINE 1367
+// MISSING LINE 1368
+// MISSING LINE 1369
+// MISSING LINE 1370
+// MISSING LINE 1371
+// MISSING LINE 1372
+// MISSING LINE 1373
+// MISSING LINE 1374
+// MISSING LINE 1375
+// MISSING LINE 1376
+// MISSING LINE 1377
+// MISSING LINE 1378
+// MISSING LINE 1379
+// MISSING LINE 1380
+// MISSING LINE 1381
+// MISSING LINE 1382
+// MISSING LINE 1383
+// MISSING LINE 1384
+// MISSING LINE 1385
+// MISSING LINE 1386
+// MISSING LINE 1387
+// MISSING LINE 1388
+// MISSING LINE 1389
+// MISSING LINE 1390
+// MISSING LINE 1391
+// MISSING LINE 1392
+// MISSING LINE 1393
+// MISSING LINE 1394
+                                        <CreditCard size={14} />
+                                        Đối soát thanh toán ({adsList.filter(ad => ad.paymentStatus === 'PENDING_PAYMENT').length})
+                                    </button>
+                                    <button
+                                        onClick={() => setAdSubTab('revenue')}
+                                        className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                                            adSubTab === 'revenue'
+                                                ? 'bg-red-600 text-white shadow-md shadow-red-600/15'
+                                                : 'bg-white dark:bg-white/[0.02] text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white border border-slate-200 dark:border-white/5'
+                                        }`}
+                                    >
+                                        <TrendingUp size={14} />
+                                        Doanh thu quảng cáo
+                                    </button>
+                                    <button
+                                        onClick={() => setAdSubTab('system')}
+                                        className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                                            adSubTab === 'system'
+                                                ? 'bg-red-600 text-white shadow-md shadow-red-600/15'
+                                                : 'bg-white dark:bg-white/[0.02] text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white border border-slate-200 dark:border-white/5'
+                                        }`}
+                                    >
+                                        <Megaphone size={14} />
+                                        Cấu hình Vị trí QC
+                                    </button>
+                                </div>
+
+                                {/* Content Rendering */}
+                                {adSubTab === 'review' && (() => {
+                                    const reviewAds = adsList.filter(ad => ad.status === 'PENDING_REVIEW');
+                                    
+                                    return (
+                                        <div className="space-y-6">
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowWithdrawalModal(false);
+                                                        setSelectedWithdrawal(null);
+                                                        setIsRejecting(false);
+                                                        setRejectReason('');
+                                                        setPaymentStep('details');
+                                                        setCopiedField(null);
+                                                    }}
+                                                    className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-xl border border-white/10 transition-all w-full mt-auto"
+                                                >
+                                                    Đóng chi tiết
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+        </div>
+    );
+}
+
+// MISSING LINE 1457
+// MISSING LINE 1458
+// MISSING LINE 1459
+// MISSING LINE 1460
+// MISSING LINE 1461
+// MISSING LINE 1462
+// MISSING LINE 1463
+// MISSING LINE 1464
+// MISSING LINE 1465
+// MISSING LINE 1466
+// MISSING LINE 1467
+// MISSING LINE 1468
+// MISSING LINE 1469
+// MISSING LINE 1470
+// MISSING LINE 1471
+// MISSING LINE 1472
+// MISSING LINE 1473
+// MISSING LINE 1474
+// MISSING LINE 1475
+// MISSING LINE 1476
+// MISSING LINE 1477
+// MISSING LINE 1478
+// MISSING LINE 1479
+// MISSING LINE 1480
+// MISSING LINE 1481
+// MISSING LINE 1482
+// MISSING LINE 1483
+// MISSING LINE 1484
+// MISSING LINE 1485
+// MISSING LINE 1486
+// MISSING LINE 1487
+// MISSING LINE 1488
+// MISSING LINE 1489
+// MISSING LINE 1490
+// MISSING LINE 1491
+// MISSING LINE 1492
+// MISSING LINE 1493
+// MISSING LINE 1494
+// MISSING LINE 1495
+// MISSING LINE 1496
+// MISSING LINE 1497
+// MISSING LINE 1498
+// MISSING LINE 1499
+// MISSING LINE 1500
+// MISSING LINE 1501
+// MISSING LINE 1502
+// MISSING LINE 1503
+// MISSING LINE 1504
+// MISSING LINE 1505
+// MISSING LINE 1506
+// MISSING LINE 1507
+// MISSING LINE 1508
+// MISSING LINE 1509
+// MISSING LINE 1510
+// MISSING LINE 1511
+// MISSING LINE 1512
+// MISSING LINE 1513
+// MISSING LINE 1514
+// MISSING LINE 1515
+// MISSING LINE 1516
+// MISSING LINE 1517
+// MISSING LINE 1518
+// MISSING LINE 1519
+                                            <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5 text-center">
+                                                <p className="text-zinc-400 text-[10px] uppercase font-bold">Đơn thanh toán</p>
+                                                <p className="text-2xl font-black mt-1 text-zinc-900 dark:text-white">{systemStatus?.dbCollections?.orders || 0}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                                setCopiedField(null);
+                            }}
+                            disabled={isProcessingAuto}
+                            className="absolute top-6 right-6 p-2 text-white/40 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors disabled:opacity-30"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        {/* Automatic Payout Simulator Interface Override */}
+                        {isProcessingAuto ? (
+                            <div className="p-10 flex flex-col items-center justify-center min-h-[480px] bg-black font-mono payout-terminal">
+                                <Loader2 size={40} className="text-red-500 animate-spin mb-6" />
+                                <h3 className="text-lg font-bold text-red-500 uppercase tracking-widest mb-2 animate-pulse">GATEWAY CHI TỰ ĐỘNG</h3>
+                                <p className="text-white/40 text-xs mb-8">ĐANG KẾT NỐI HỆ THỐNG GIẢI NGÂN NAPAS247</p>
+
+                                <div className="w-full bg-[#090909] border border-white/5 rounded-2xl p-6 h-64 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 text-left font-mono">
+                                    {autoTerminalLogs.map((log, index) => (
+                                        <div key={index} className="text-[11px] leading-relaxed animate-in slide-in-from-left duration-200">
+                                            {log}
+                                        </div>
+                                    ))}
+                                    <div ref={terminalEndRef} />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="number" defaultValue={15000} className="w-24 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-sm font-bold text-center text-zinc-800 dark:text-white" />
+                                            <span className="text-sm font-bold text-zinc-500">đ</span>
+                                        </div>
+                                    </div>
+
+                                            
+
+                                    <div className="flex justify-end pt-4">
+                                        <button className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md">
+                                            Lưu thay đổi cấu hình
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            {/* SMART SEARCH MODAL */}
+            {isSmartSearchOpen && (
+                <div className="fixed inset-0 bg-black/75 dark:bg-black/85 backdrop-blur-md flex items-start justify-center z-50 p-4 pt-20 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#0c0c0c] border border-slate-200 dark:border-white/10 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh] transition-all duration-300">
+                        {/* Search header */}
+                        <div className="p-6 border-b border-slate-200 dark:border-white/5 flex items-center gap-4 bg-slate-50 dark:bg-white/[0.01]">
+                            <Search className="text-red-500" size={24} />
+                            <input 
+                                type="text"
+// MISSING LINE 1581
+// MISSING LINE 1582
+// MISSING LINE 1583
+// MISSING LINE 1584
+// MISSING LINE 1585
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right">
+                                                                <span className="text-sm font-black text-green-600 dark:text-green-500 font-mono">
+                                                                    {formatVND(withdrawal.amount)}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-8 py-5">
+                                                                {withdrawal.status !== 'PENDING' ? (
+                                                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${withdrawal.method === 'AUTOMATIC' ? 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                                                                        {withdrawal.method === 'AUTOMATIC' ? 'Tự động' : 'Thủ công'}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[9px] font-bold text-zinc-400 dark:text-white/20 upp
+// MISSING LINE 1599
+// MISSING LINE 1600
+// MISSING LINE 1601
+// MISSING LINE 1602
+// MISSING LINE 1603
+// MISSING LINE 1604
+// MISSING LINE 1605
+// MISSING LINE 1606
+// MISSING LINE 1607
+// MISSING LINE 1608
+// MISSING LINE 1609
+// MISSING LINE 1610
+// MISSING LINE 1611
+// MISSING LINE 1612
+// MISSING LINE 1613
+// MISSING LINE 1614
+// MISSING LINE 1615
+// MISSING LINE 1616
+// MISSING LINE 1617
+// MISSING LINE 1618
+// MISSING LINE 1619
+// MISSING LINE 1620
+// MISSING LINE 1621
+// MISSING LINE 1622
+// MISSING LINE 1623
+// MISSING LINE 1624
+// MISSING LINE 1625
+// MISSING LINE 1626
+// MISSING LINE 1627
+// MISSING LINE 1628
+// MISSING LINE 1629
+// MISSING LINE 1630
+// MISSING LINE 1631
+// MISSING LINE 1632
+// MISSING LINE 1633
+// MISSING LINE 1634
+// MISSING LINE 1635
+// MISSING LINE 1636
+// MISSING LINE 1637
+// MISSING LINE 1638
+// MISSING LINE 1639
+// MISSING LINE 1640
+// MISSING LINE 1641
+// MISSING LINE 1642
+// MISSING LINE 1643
+// MISSING LINE 1644
+// MISSING LINE 1645
+// MISSING LINE 1646
+// MISSING LINE 1647
+// MISSING LINE 1648
+// MISSING LINE 1649
+// MISSING LINE 1650
+// MISSING LINE 1651
+// MISSING LINE 1652
+// MISSING LINE 1653
+// MISSING LINE 1654
+// MISSING LINE 1655
+// MISSING LINE 1656
+// MISSING LINE 1657
+                                                    <h3 className="text-lg font-black mt-1 text-zinc-950 dark:text-white truncate">{formatVND(revenueData?.premiumRevenue || 0)}</h3>
+                                                    <p className="text-[9px] text-zinc-500 dark:text-white/20 mt-1">Từ đăng ký gói Premium</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 p-5 rounded-2xl shadow-sm text-left">
+                                                    <div className="w-8 h-8 bg-blue-500/10 text-blue-500 rounded-lg flex items-center justify-center mb-3">
+                                                        <CreditCard size={18} />
+                                                    </div>
+                                                    <p className="text-[10px] text-zinc-400 dark:text-white/20 uppercase tracking-widest font-black">Hợp đồng cam kết</p>
+                                                    <h3 className="text-lg font-black mt-1 text-zinc-950 dark:text-white truncate">{formatVND(revenueData?.contractRevenue || 0)}</h3>
+                                                    <p className="text-[9px] text-zinc-500 dark:text-white/20 mt-1">Tổng ngân sách QC đã duyệt</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-white/[0.02] borde
+// MISSING LINE 1670
+// MISSING LINE 1671
+// MISSING LINE 1672
+// MISSING LINE 1673
+// MISSING LINE 1674
+// MISSING LINE 1675
+// MISSING LINE 1676
+// MISSING LINE 1677
+// MISSING LINE 1678
+// MISSING LINE 1679
+// MISSING LINE 1680
+// MISSING LINE 1681
+// MISSING LINE 1682
+// MISSING LINE 1683
+// MISSING LINE 1684
+// MISSING LINE 1685
+// MISSING LINE 1686
+// MISSING LINE 1687
+// MISSING LINE 1688
+// MISSING LINE 1689
+// MISSING LINE 1690
+// MISSING LINE 1691
+// MISSING LINE 1692
+// MISSING LINE 1693
+// MISSING LINE 1694
+// MISSING LINE 1695
+// MISSING LINE 1696
+// MISSING LINE 1697
+// MISSING LINE 1698
+// MISSING LINE 1699
+// MISSING LINE 1700
+// MISSING LINE 1701
+// MISSING LINE 1702
+// MISSING LINE 1703
+// MISSING LINE 1704
+// MISSING LINE 1705
+// MISSING LINE 1706
+// MISSING LINE 1707
+// MISSING LINE 1708
+// MISSING LINE 1709
+// MISSING LINE 1710
+// MISSING LINE 1711
+// MISSING LINE 1712
+// MISSING LINE 1713
+// MISSING LINE 1714
+// MISSING LINE 1715
+// MISSING LINE 1716
+// MISSING LINE 1717
+// MISSING LINE 1718
+// MISSING LINE 1719
+// MISSING LINE 1720
+// MISSING LINE 1721
+// MISSING LINE 1722
+// MISSING LINE 1723
+// MISSING LINE 1724
+// MISSING LINE 1725
+// MISSING LINE 1726
+// MISSING LINE 1727
+// MISSING LINE 1728
+// MISSING LINE 1729
+// MISSING LINE 1730
+// MISSING LINE 1731
+// MISSING LINE 1732
+// MISSING LINE 1733
+// MISSING LINE 1734
+// MISSING LINE 1735
+// MISSING LINE 1736
+// MISSING LINE 1737
+// MISSING LINE 1738
+// MISSING LINE 1739
+// MISSING LINE 1740
+// MISSING LINE 1741
+// MISSING LINE 1742
+// MISSING LINE 1743
+// MISSING LINE 1744
+// MISSING LINE 1745
+// MISSING LINE 1746
+// MISSING LINE 1747
+// MISSING LINE 1748
+// MISSING LINE 1749
+// MISSING LINE 1750
+// MISSING LINE 1751
+// MISSING LINE 1752
+// MISSING LINE 1753
+// MISSING LINE 1754
+// MISSING LINE 1755
+// MISSING LINE 1756
+// MISSING LINE 1757
+// MISSING LINE 1758
+// MISSING LINE 1759
+// MISSING LINE 1760
+// MISSING LINE 1761
+// MISSING LINE 1762
+// MISSING LINE 1763
+// MISSING LINE 1764
+// MISSING LINE 1765
+// MISSING LINE 1766
+// MISSING LINE 1767
+// MISSING LINE 1768
+// MISSING LINE 1769
+// MISSING LINE 1770
+// MISSING LINE 1771
+// MISSING LINE 1772
+// MISSING LINE 1773
+// MISSING LINE 1774
+// MISSING LINE 1775
+// MISSING LINE 1776
+// MISSING LINE 1777
+// MISSING LINE 1778
+// MISSING LINE 1779
+// MISSING LINE 1780
+// MISSING LINE 1781
+// MISSING LINE 1782
+// MISSING LINE 1783
+// MISSING LINE 1784
+// MISSING LINE 1785
+// MISSING LINE 1786
+// MISSING LINE 1787
+// MISSING LINE 1788
+// MISSING LINE 1789
+// MISSING LINE 1790
+// MISSING LINE 1791
+// MISSING LINE 1792
+// MISSING LINE 1793
+// MISSING LINE 1794
+// MISSING LINE 1795
+// MISSING LINE 1796
+// MISSING LINE 1797
+// MISSING LINE 1798
+// MISSING LINE 1799
+// MISSING LINE 1800
+// MISSING LINE 1801
+// MISSING LINE 1802
+// MISSING LINE 1803
+// MISSING LINE 1804
+// MISSING LINE 1805
+// MISSING LINE 1806
+// MISSING LINE 1807
+// MISSING LINE 1808
+// MISSING LINE 1809
+// MISSING LINE 1810
+// MISSING LINE 1811
+// MISSING LINE 1812
+// MISSING LINE 1813
+// MISSING LINE 1814
+// MISSING LINE 1815
+// MISSING LINE 1816
+// MISSING LINE 1817
+// MISSING LINE 1818
+// MISSING LINE 1819
+// MISSING LINE 1820
+// MISSING LINE 1821
+// MISSING LINE 1822
+// MISSING LINE 1823
+// MISSING LINE 1824
+// MISSING LINE 1825
+// MISSING LINE 1826
+// MISSING LINE 1827
+// MISSING LINE 1828
+// MISSING LINE 1829
+// MISSING LINE 1830
+// MISSING LINE 1831
+// MISSING LINE 1832
+// MISSING LINE 1833
+// MISSING LINE 1834
+// MISSING LINE 1835
+// MISSING LINE 1836
+// MISSING LINE 1837
+// MISSING LINE 1838
+// MISSING LINE 1839
+// MISSING LINE 1840
+// MISSING LINE 1841
+// MISSING LINE 1842
+// MISSING LINE 1843
+// MISSING LINE 1844
+// MISSING LINE 1845
+// MISSING LINE 1846
+// MISSING LINE 1847
+// MISSING LINE 1848
+// MISSING LINE 1849
+// MISSING LINE 1850
+// MISSING LINE 1851
+// MISSING LINE 1852
+// MISSING LINE 1853
+// MISSING LINE 1854
+// MISSING LINE 1855
+// MISSING LINE 1856
+// MISSING LINE 1857
+// MISSING LINE 1858
+// MISSING LINE 1859
+// MISSING LINE 1860
+// MISSING LINE 1861
+// MISSING LINE 1862
+// MISSING LINE 1863
+// MISSING LINE 1864
+// MISSING LINE 1865
+// MISSING LINE 1866
+// MISSING LINE 1867
+// MISSING LINE 1868
+// MISSING LINE 1869
+// MISSING LINE 1870
+// MISSING LINE 1871
+// MISSING LINE 1872
+// MISSING LINE 1873
+// MISSING LINE 1874
+// MISSING LINE 1875
+// MISSING LINE 1876
+// MISSING LINE 1877
+// MISSING LINE 1878
+// MISSING LINE 1879
+// MISSING LINE 1880
+// MISSING LINE 1881
+// MISSING LINE 1882
+// MISSING LINE 1883
+// MISSING LINE 1884
+// MISSING LINE 1885
+// MISSING LINE 1886
+// MISSING LINE 1887
+// MISSING LINE 1888
+// MISSING LINE 1889
+// MISSING LINE 1890
+// MISSING LINE 1891
+// MISSING LINE 1892
+// MISSING LINE 1893
+// MISSING LINE 1894
+// MISSING LINE 1895
+// MISSING LINE 1896
+// MISSING LINE 1897
+// MISSING LINE 1898
+// MISSING LINE 1899
+// MISSING LINE 1900
+// MISSING LINE 1901
+// MISSING LINE 1902
+// MISSING LINE 1903
+// MISSING LINE 1904
+// MISSING LINE 1905
+// MISSING LINE 1906
+// MISSING LINE 1907
+// MISSING LINE 1908
+// MISSING LINE 1909
+// MISSING LINE 1910
+// MISSING LINE 1911
+// MISSING LINE 1912
+// MISSING LINE 1913
+// MISSING LINE 1914
+// MISSING LINE 1915
+// MISSING LINE 1916
+// MISSING LINE 1917
+// MISSING LINE 1918
+// MISSING LINE 1919
+// MISSING LINE 1920
+// MISSING LINE 1921
+// MISSING LINE 1922
+// MISSING LINE 1923
+// MISSING LINE 1924
+// MISSING LINE 1925
+// MISSING LINE 1926
+// MISSING LINE 1927
+// MISSING LINE 1928
+// MISSING LINE 1929
+                                                <p className="text-2xl font-black mt-1 text-zinc-900 dark:text-white">{systemStatus?.dbCollections?.orders || 0}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 8. TAB SETTINGS (CẤU HÌNH HỆ THỐNG) */}
+                        {activeTab === 'settings' && (
+                            <div className="bg-white dark:bg-zinc-900/20 border border-slate-200 dark:border-white/5 rounded-3xl p-8 animate-in fade-in duration-500 shadow-sm dark:shadow-none">
+                                <h3 className="text-xl font-bold italic uppercase text-zinc-900 dark:text-white mb-6">Cấu hình Hệ thống tối cao</h3>
+                                
+                                <div className="space-y-6 max-w-2xl">
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-2xl">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Tỉ lệ phần trăm phí sàn thu (Platform Fee)</h4>
+                                            <p className="text-[11px] text-zinc-500 dark:border-whit
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="number" defaultValue={10} className="w-16 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-sm font-bold text-center text-zinc-800 dark:text-white" />
+                                            <span className="text-sm font-bold text-zinc-500">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-2xl">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Mức thầu quảng cáo cơ bản (Min CPM Ad Bid)</h4>
+                                            <p className="text-[11px] text-zinc-500 dark:text-white/30">Đơn giá tối thiểu cho mỗi 1000 lượt hiển thị quảng cáo.</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="number" defaultValue={15000} className="w-24 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-sm font-bold text-center text-zinc-800 dark:text-white" />
+                                            <span className="text-sm font-bold text-zinc-500">đ</span>
+                                        </div>
+                                    </div>
+
+                                            
+
+                                    <div className="flex justify-end pt-4">
+                                        <button className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md">
+                                            Lưu thay đổi cấu hình
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            {/* SMART SEARCH MODAL */}
+                                        <button className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md">
+                                            Lưu thay đổi cấu hình
+                                        </button>
+                                    </div>
+                                </div>
+// MISSING LINE 1986
+// MISSING LINE 1987
+// MISSING LINE 1988
+                                            </button>
+                                            <label className="relative cursor-pointer bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                                                <span>{isRestoring ? 'Đang khôi phục...' : 'Chọn file khôi phục (Restore JSON)'}</span>
+                                                <input 
+                                                    type="file" 
+                                                    accept=".json" 
+                                                    onChange={handleRestore}
+                                                    disabled={isRestoring}
+                                                    className="hidden" 
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end pt-4">
+                                        <button className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition-all shadow-md">
+                                            Lưu thay đổi cấu hình
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 className="font-bold text-base text-zinc-900 dark:text-white group-hover:text-red-500 transition-colors">Chính chủ đạo (2/3)</h3>
+                                                                        <p className="text-xs text-zinc-500 dark:text-white/30 mt-1 line-clamp-2">Khu vực Carousel lớn chiếm 2/3 bề ngang trên trang chủ. Hỗ trợ chạy cả ảnh và video tắt tiếng.</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="border-t border-slate-100 dark:border-white/5 pt-4 flex items-center justify-between text-[10px] text-zinc-400 dark:text-white/20">
+                                                                    <span>Xem chi tiết những cái đang chạy</span>
+                                                                    <span className="font-bold text-red-500 group-hover:underline flex items-center gap-1">Khám phá <ChevronRightIcon size={12} /></span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* C
+// MISSING LINE 2023
+// MISSING LINE 2024
+// MISSING LINE 2025
+// MISSING LINE 2026
+// MISSING LINE 2027
+// MISSING LINE 2028
+// MISSING LINE 2029
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 className="font-bold text-base text-zinc-900 dark:text-white group-hover:text-red-500 transition-colors">Phụ đạo (1/3)</h3>
+                                                                        <p className="text-xs text-zinc-500 dark:text-white/30 mt-1 line-clamp-2">Hai banner nhỏ đặt dọc chiếm 1/3 bề ngang bên phải trên trang chủ. Hỗ trợ các tệp ảnh động.</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="border-t border-slate-100 dark:border-white/5 pt-4 flex items-center justify-between text-[10px] text-zinc-400 dark:text-white/20">
+                                                                    <span>Xem chi tiết những cái đang chạy</span>
+                                                                    <span className="font-bold text-red-500 group-hover:underline flex items-center gap-1">Khám phá <ChevronRightIcon size={12} /></span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* D. LEAF CATEGORIES LISTING */}
+                                                    {isLeaf && (
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+// MISSING LINE 2051
+// MISSING LINE 2052
+// MISSING LINE 2053
+// MISSING LINE 2054
+// MISSING LINE 2055
+// MISSING LINE 2056
+// MISSING LINE 2057
+// MISSING LINE 2058
+// MISSING LINE 2059
+                                        </div>
+                                    )}
+
+                                    {/* Users section */}
+                                    {smartSearchResults.users?.length > 0 && (
+                                        <div>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-3 flex items-center gap-2">
+                                                <Users size={12} />
+                                                                    >
+                                                                        Tạo quảng cáo đầu tiên
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                    {currentCategoryAds.map((ad) => {
+                                                                        const isVideo = isVideoFile(ad.mediaUrl);
+                                                                        
+                                                                        return (
+                                                                            <div 
+                                                                                key={ad.slotId}
+                                                                                className={`bg-white dark:bg-white/[0.02] border rounded-3xl p-5 hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md transition-all shadow-sm flex flex-col justify-between group ${
+                                                                                    selectedAdSlot?.slotId === ad.slotId 
+                                                                                        ? 'border-red-500/50 dark:border-red-500/50 bg-red-500/[0.02]' 
+                                                                                        : 'border-slate-
+// MISSING LINE 2084
+// MISSING LINE 2085
+// MISSING LINE 2086
+// MISSING LINE 2087
+// MISSING LINE 2088
+// MISSING LINE 2089
+// MISSING LINE 2090
+// MISSING LINE 2091
+// MISSING LINE 2092
+// MISSING LINE 2093
+// MISSING LINE 2094
+// MISSING LINE 2095
+// MISSING LINE 2096
+// MISSING LINE 2097
+// MISSING LINE 2098
+// MISSING LINE 2099
+// MISSING LINE 2100
+// MISSING LINE 2101
+// MISSING LINE 2102
+// MISSING LINE 2103
+// MISSING LINE 2104
+// MISSING LINE 2105
+// MISSING LINE 2106
+// MISSING LINE 2107
+// MISSING LINE 2108
+// MISSING LINE 2109
+// MISSING LINE 2110
+// MISSING LINE 2111
+// MISSING LINE 2112
+// MISSING LINE 2113
+// MISSING LINE 2114
+// MISSING LINE 2115
+// MISSING LINE 2116
+// MISSING LINE 2117
+// MISSING LINE 2118
+// MISSING LINE 2119
+// MISSING LINE 2120
+// MISSING LINE 2121
+// MISSING LINE 2122
+// MISSING LINE 2123
+// MISSING LINE 2124
+// MISSING LINE 2125
+// MISSING LINE 2126
+// MISSING LINE 2127
+// MISSING LINE 2128
+// MISSING LINE 2129
+// MISSING LINE 2130
+// MISSING LINE 2131
+// MISSING LINE 2132
+// MISSING LINE 2133
+// MISSING LINE 2134
+// MISSING LINE 2135
+// MISSING LINE 2136
+// MISSING LINE 2137
+// MISSING LINE 2138
+// MISSING LINE 2139
+// MISSING LINE 2140
+// MISSING LINE 2141
+// MISSING LINE 2142
+// MISSING LINE 2143
+// MISSING LINE 2144
+// MISSING LINE 2145
+// MISSING LINE 2146
+// MISSING LINE 2147
+// MISSING LINE 2148
+// MISSING LINE 2149
+// MISSING LINE 2150
+// MISSING LINE 2151
+// MISSING LINE 2152
+// MISSING LINE 2153
+// MISSING LINE 2154
+// MISSING LINE 2155
+// MISSING LINE 2156
+// MISSING LINE 2157
+// MISSING LINE 2158
+// MISSING LINE 2159
+// MISSING LINE 2160
+// MISSING LINE 2161
+// MISSING LINE 2162
+// MISSING LINE 2163
+// MISSING LINE 2164
+// MISSING LINE 2165
+// MISSING LINE 2166
+// MISSING LINE 2167
+// MISSING LINE 2168
+// MISSING LINE 2169
+// MISSING LINE 2170
+// MISSING LINE 2171
+// MISSING LINE 2172
+// MISSING LINE 2173
+// MISSING LINE 2174
+// MISSING LINE 2175
+// MISSING LINE 2176
+// MISSING LINE 2177
+// MISSING LINE 2178
+// MISSING LINE 2179
+// MISSING LINE 2180
+// MISSING LINE 2181
+// MISSING LINE 2182
+// MISSING LINE 2183
+// MISSING LINE 2184
+// MISSING LINE 2185
+// MISSING LINE 2186
+// MISSING LINE 2187
+// MISSING LINE 2188
+// MISSING LINE 2189
+// MISSING LINE 2190
+// MISSING LINE 2191
+// MISSING LINE 2192
+// MISSING LINE 2193
+// MISSING LINE 2194
+// MISSING LINE 2195
+// MISSING LINE 2196
+// MISSING LINE 2197
+// MISSING LINE 2198
+// MISSING LINE 2199
+// MISSING LINE 2200
+// MISSING LINE 2201
+// MISSING LINE 2202
+// MISSING LINE 2203
+// MISSING LINE 2204
+// MISSING LINE 2205
+// MISSING LINE 2206
+// MISSING LINE 2207
+// MISSING LINE 2208
+// MISSING LINE 2209
+// MISSING LINE 2210
+// MISSING LINE 2211
+// MISSING LINE 2212
+// MISSING LINE 2213
+// MISSING LINE 2214
+// MISSING LINE 2215
+// MISSING LINE 2216
+// MISSING LINE 2217
+// MISSING LINE 2218
+// MISSING LINE 2219
+// MISSING LINE 2220
+// MISSING LINE 2221
+// MISSING LINE 2222
+// MISSING LINE 2223
+// MISSING LINE 2224
+// MISSING LINE 2225
+// MISSING LINE 2226
+// MISSING LINE 2227
+// MISSING LINE 2228
+// MISSING LINE 2229
+// MISSING LINE 2230
+// MISSING LINE 2231
+// MISSING LINE 2232
+// MISSING LINE 2233
+// MISSING LINE 2234
+// MISSING LINE 2235
+// MISSING LINE 2236
+// MISSING LINE 2237
+// MISSING LINE 2238
+// MISSING LINE 2239
+// MISSING LINE 2240
+// MISSING LINE 2241
+// MISSING LINE 2242
+// MISSING LINE 2243
+// MISSING LINE 2244
+// MISSING LINE 2245
+// MISSING LINE 2246
+// MISSING LINE 2247
+// MISSING LINE 2248
+// MISSING LINE 2249
+// MISSING LINE 2250
+// MISSING LINE 2251
+// MISSING LINE 2252
+// MISSING LINE 2253
+// MISSING LINE 2254
+// MISSING LINE 2255
+// MISSING LINE 2256
+// MISSING LINE 2257
+// MISSING LINE 2258
+// MISSING LINE 2259
+// MISSING LINE 2260
+// MISSING LINE 2261
+// MISSING LINE 2262
+// MISSING LINE 2263
+// MISSING LINE 2264
+// MISSING LINE 2265
+// MISSING LINE 2266
+// MISSING LINE 2267
+// MISSING LINE 2268
+// MISSING LINE 2269
+// MISSING LINE 2270
+// MISSING LINE 2271
+// MISSING LINE 2272
+// MISSING LINE 2273
+// MISSING LINE 2274
+// MISSING LINE 2275
+// MISSING LINE 2276
+// MISSING LINE 2277
+// MISSING LINE 2278
+// MISSING LINE 2279
+// MISSING LINE 2280
+// MISSING LINE 2281
+// MISSING LINE 2282
+// MISSING LINE 2283
+// MISSING LINE 2284
+// MISSING LINE 2285
+// MISSING LINE 2286
+// MISSING LINE 2287
+// MISSING LINE 2288
+// MISSING LINE 2289
+// MISSING LINE 2290
+// MISSING LINE 2291
+// MISSING LINE 2292
+// MISSING LINE 2293
+// MISSING LINE 2294
+// MISSING LINE 2295
+// MISSING LINE 2296
+// MISSING LINE 2297
+// MISSING LINE 2298
+// MISSING LINE 2299
+// MISSING LINE 2300
+// MISSING LINE 2301
+// MISSING LINE 2302
+// MISSING LINE 2303
+// MISSING LINE 2304
+// MISSING LINE 2305
+// MISSING LINE 2306
+// MISSING LINE 2307
+// MISSING LINE 2308
+// MISSING LINE 2309
+// MISSING LINE 2310
+                                                    {(editorMode === 'edit' || editorMode === 'create') && (
+                                                        <div className="bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-3xl p-6 space-y-5 shadow-sm animate-in fade-in duration-300">
+                                                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+                                                                <h3 className="font-bold text-sm italic uppercase text-red-500">
+                                                                    {editorMode === 'create' ? 'Thêm Quảng Cáo Mới' : 'Chỉnh sửa Quảng cáo'}
+                                                                </h3>
+                                                                <button 
+                                                                    onClick={() => { setSelectedAdSlot(null); setEditorMode(null); }} 
+                                                                    className="text-zinc-400 hover:text-zinc-950 dark:hover:text-white p-1 transition cursor-pointer"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                            </div>
+
+<truncated 16023 bytes>
+// MISSING LINE 2326
+// MISSING LINE 2327
+// MISSING LINE 2328
+// MISSING LINE 2329
+// MISSING LINE 2330
+// MISSING LINE 2331
+// MISSING LINE 2332
+// MISSING LINE 2333
+// MISSING LINE 2334
+// MISSING LINE 2335
+// MISSING LINE 2336
+// MISSING LINE 2337
+// MISSING LINE 2338
+// MISSING LINE 2339
+// MISSING LINE 2340
+// MISSING LINE 2341
+// MISSING LINE 2342
+// MISSING LINE 2343
+// MISSING LINE 2344
+// MISSING LINE 2345
+// MISSING LINE 2346
+// MISSING LINE 2347
+// MISSING LINE 2348
+// MISSING LINE 2349
+// MISSING LINE 2350
+// MISSING LINE 2351
+// MISSING LINE 2352
+// MISSING LINE 2353
+// MISSING LINE 2354
+// MISSING LINE 2355
+// MISSING LINE 2356
+// MISSING LINE 2357
+// MISSING LINE 2358
+// MISSING LINE 2359
+// MISSING LINE 2360
+// MISSING LINE 2361
+// MISSING LINE 2362
+// MISSING LINE 2363
+// MISSING LINE 2364
+// MISSING LINE 2365
+// MISSING LINE 2366
+// MISSING LINE 2367
+// MISSING LINE 2368
+// MISSING LINE 2369
+// MISSING LINE 2370
+// MISSING LINE 2371
+// MISSING LINE 2372
+// MISSING LINE 2373
+// MISSING LINE 2374
+// MISSING LINE 2375
+// MISSING LINE 2376
+// MISSING LINE 2377
+// MISSING LINE 2378
+// MISSING LINE 2379
+// MISSING LINE 2380
+// MISSING LINE 2381
+// MISSING LINE 2382
+// MISSING LINE 2383
+// MISSING LINE 2384
+// MISSING LINE 2385
+// MISSING LINE 2386
+// MISSING LINE 2387
+// MISSING LINE 2388
+// MISSING LINE 2389
+// MISSING LINE 2390
+// MISSING LINE 2391
+// MISSING LINE 2392
+// MISSING LINE 2393
+// MISSING LINE 2394
+// MISSING LINE 2395
+// MISSING LINE 2396
+// MISSING LINE 2397
+// MISSING LINE 2398
+// MISSING LINE 2399
+// MISSING LINE 2400
+// MISSING LINE 2401
+// MISSING LINE 2402
+// MISSING LINE 2403
+// MISSING LINE 2404
+// MISSING LINE 2405
+// MISSING LINE 2406
+// MISSING LINE 2407
+// MISSING LINE 2408
+// MISSING LINE 2409
+// MISSING LINE 2410
+// MISSING LINE 2411
+// MISSING LINE 2412
+// MISSING LINE 2413
+// MISSING LINE 2414
+// MISSING LINE 2415
+// MISSING LINE 2416
+// MISSING LINE 2417
+// MISSING LINE 2418
+// MISSING LINE 2419
+// MISSING LINE 2420
+// MISSING LINE 2421
+// MISSING LINE 2422
+// MISSING LINE 2423
+// MISSING LINE 2424
+// MISSING LINE 2425
+// MISSING LINE 2426
+// MISSING LINE 2427
+// MISSING LINE 2428
+// MISSING LINE 2429
+// MISSING LINE 2430
+// MISSING LINE 2431
+// MISSING LINE 2432
+// MISSING LINE 2433
+// MISSING LINE 2434
+// MISSING LINE 2435
+// MISSING LINE 2436
+// MISSING LINE 2437
+// MISSING LINE 2438
+// MISSING LINE 2439
+// MISSING LINE 2440
+// MISSING LINE 2441
+// MISSING LINE 2442
+// MISSING LINE 2443
+// MISSING LINE 2444
+// MISSING LINE 2445
+// MISSING LINE 2446
+// MISSING LINE 2447
+// MISSING LINE 2448
+// MISSING LINE 2449
+// MISSING LINE 2450
+// MISSING LINE 2451
+// MISSING LINE 2452
+// MISSING LINE 2453
+// MISSING LINE 2454
+// MISSING LINE 2455
+// MISSING LINE 2456
+// MISSING LINE 2457
+// MISSING LINE 2458
+// MISSING LINE 2459
+                                                                        onClick={handleSaveAdSlot}
+                                                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-bold shadow-lg shadow-red-600/10 cursor-pointer active:scale-95 transition-all text-center"
+                                                                    >
+                                                                        Lưu cài đặt
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => { setSelectedAdSlot(null); setEditorMode(null); }}
+                                                                        className="flex-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-zinc-800 dark:text-white py-2.5 rounded-xl font-bold transition-all text-center cursor-pointer"
+                                                                    >
+                                                                        Hủy
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 3. DEFAULT PLACEHOLDER STATE */}
+                                                    {editorMode === null && (
+// MISSING LINE 2478
+// MISSING LINE 2479
+// MISSING LINE 2480
+// MISSING LINE 2481
+// MISSING LINE 2482
+// MISSING LINE 2483
+// MISSING LINE 2484
+// MISSING LINE 2485
+// MISSING LINE 2486
+// MISSING LINE 2487
+// MISSING LINE 2488
+// MISSING LINE 2489
+// MISSING LINE 2490
+// MISSING LINE 2491
+// MISSING LINE 2492
+// MISSING LINE 2493
+// MISSING LINE 2494
+// MISSING LINE 2495
+// MISSING LINE 2496
+// MISSING LINE 2497
+// MISSING LINE 2498
+// MISSING LINE 2499
+// MISSING LINE 2500
+// MISSING LINE 2501
+// MISSING LINE 2502
+// MISSING LINE 2503
+// MISSING LINE 2504
+// MISSING LINE 2505
+// MISSING LINE 2506
+// MISSING LINE 2507
+// MISSING LINE 2508
+// MISSING LINE 2509
+// MISSING LINE 2510
+// MISSING LINE 2511
+// MISSING LINE 2512
+// MISSING LINE 2513
+// MISSING LINE 2514
+// MISSING LINE 2515
+// MISSING LINE 2516
+// MISSING LINE 2517
+// MISSING LINE 2518
+// MISSING LINE 2519
+// MISSING LINE 2520
+// MISSING LINE 2521
+// MISSING LINE 2522
+// MISSING LINE 2523
+// MISSING LINE 2524
+// MISSING LINE 2525
+// MISSING LINE 2526
+// MISSING LINE 2527
+// MISSING LINE 2528
+// MISSING LINE 2529
+// MISSING LINE 2530
+// MISSING LINE 2531
+// MISSING LINE 2532
+// MISSING LINE 2533
+// MISSING LINE 2534
+// MISSING LINE 2535
+// MISSING LINE 2536
+// MISSING LINE 2537
+// MISSING LINE 2538
+// MISSING LINE 2539
+// MISSING LINE 2540
+// MISSING LINE 2541
+// MISSING LINE 2542
+// MISSING LINE 2543
+// MISSING LINE 2544
+// MISSING LINE 2545
+// MISSING LINE 2546
+// MISSING LINE 2547
+// MISSING LINE 2548
+// MISSING LINE 2549
+// MISSING LINE 2550
+// MISSING LINE 2551
+// MISSING LINE 2552
+// MISSING LINE 2553
+// MISSING LINE 2554
+// MISSING LINE 2555
+// MISSING LINE 2556
+// MISSING LINE 2557
+// MISSING LINE 2558
+// MISSING LINE 2559
+// MISSING LINE 2560
+// MISSING LINE 2561
+// MISSING LINE 2562
+// MISSING LINE 2563
+// MISSING LINE 2564
+// MISSING LINE 2565
+// MISSING LINE 2566
+// MISSING LINE 2567
+// MISSING LINE 2568
+// MISSING LINE 2569
+// MISSING LINE 2570
+// MISSING LINE 2571
+// MISSING LINE 2572
+// MISSING LINE 2573
+// MISSING LINE 2574
+// MISSING LINE 2575
+// MISSING LINE 2576
+// MISSING LINE 2577
+// MISSING LINE 2578
+// MISSING LINE 2579
+// MISSING LINE 2580
+// MISSING LINE 2581
+// MISSING LINE 2582
+// MISSING LINE 2583
+// MISSING LINE 2584
+// MISSING LINE 2585
+// MISSING LINE 2586
+// MISSING LINE 2587
+// MISSING LINE 2588
+// MISSING LINE 2589
+// MISSING LINE 2590
+// MISSING LINE 2591
+// MISSING LINE 2592
+// MISSING LINE 2593
+// MISSING LINE 2594
+// MISSING LINE 2595
+// MISSING LINE 2596
+// MISSING LINE 2597
+// MISSING LINE 2598
+// MISSING LINE 2599
+                                                        className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition cursor-pointer"
+                                                    >
+                                                        Xoá bình luận
+                                                    </button>
+                                                </td>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'copyright' && (
+                        <div className="animate-in fade-in duration-500 space-y-6 text-left">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold italic uppercase">Khiếu nại & Tranh chấp Bản quyền</h2>
+                                    <p className="text-xs text-white/40 mt-1 font-medium">Xem xét các yêu cầu gỡ bỏ video do vi phạm bản quyền từ các bên sở hữu trí tuệ.</p>
+                                </div>
+                            </div>
+                            <div className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="bg-white/[0.01] border-b border-white/5 text-white/45 font-bold uppercase tracking-wider text-[10px]">
+                                            <th className="p-4">Video bị khiếu nại</th>
+                                            <th className="p-4">Bên khiếu nại (Chủ sở hữu)</th>
+                                            <th className="p-4">Tác 
+// MISSING LINE 2625
+// MISSING LINE 2626
+// MISSING LINE 2627
+// MISSING LINE 2628
+// MISSING LINE 2629
+// MISSING LINE 2630
+// MISSING LINE 2631
+// MISSING LINE 2632
+// MISSING LINE 2633
+// MISSING LINE 2634
+// MISSING LINE 2635
+// MISSING LINE 2636
+// MISSING LINE 2637
+// MISSING LINE 2638
+// MISSING LINE 2639
+// MISSING LINE 2640
+// MISSING LINE 2641
+// MISSING LINE 2642
+// MISSING LINE 2643
+// MISSING LINE 2644
+// MISSING LINE 2645
+// MISSING LINE 2646
+// MISSING LINE 2647
+// MISSING LINE 2648
+// MISSING LINE 2649
+// MISSING LINE 2650
+                                                    >
+                                                        Chấp nhận & Gỡ video
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reports.filter(r => r.reason === 'Vi phạm bản quyền').length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="p-8 text-center text-white/20 italic">
+                                                    Không có khiếu nại bản quyền nào chưa xử lý.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'verification' && (
+                        <div className="animate-in fade-in duration-500 space-y-6 text-left">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold italic uppercase">Xác minh Kênh chính chủ (Tích xanh)</h2>
+                                    <p className="text-xs text-white/40 mt-1">Phê duyệt cấp tích xanh xác thực danh tính cho các Creator đủ điều kiện.</p>
+// MISSING LINE 2676
+// MISSING LINE 2677
+// MISSING LINE 2678
+// MISSING LINE 2679
+// MISSING LINE 2680
+                        <div className="animate-in fade-in duration-500 space-y-6 text-left">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold italic uppercase">Xác minh Kênh chính chủ (Tích xanh)</h2>
+                                    <p className="text-xs text-white/40 mt-1">Phê duyệt cấp tích xanh xác thực danh tính cho các Creator đủ điều kiện.</p>
+                                </div>
+                            </div>
+                            <div className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="bg-white/[0.01] border-b border-white/5 text-white/45 font-bold uppercase tracking-wider text-[10px]">
+                                            <th className="p-4">Kênh yêu cầu</th>
+                                            <th className="p-4">Lượt đăng ký (Subscribers)</th>
+                                            <th className="p-4">Trạng thái xác minh</th>
+                                            <th className="p-4 text-right">Quyết định</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {allChannels.map((channel) => (
+                                            <tr key={channel._id} className="hover:bg-white/[0.005]">
