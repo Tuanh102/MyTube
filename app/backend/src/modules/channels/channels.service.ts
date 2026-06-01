@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { Channel, ChannelDocument } from "./schemas/channel.schema";
 import { User, UserDocument } from "../users/schemas/user.schema";
 
@@ -133,6 +133,9 @@ export class ChannelsService {
   }
 
   async findByUser(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
     return this.channelModel.find({ user: userId }).exec();
   }
 
@@ -173,6 +176,9 @@ export class ChannelsService {
   }
 
   async toggleFollow(id: string, userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false, message: "Người dùng không hợp lệ" };
+    }
     const channel = await this.channelModel.findById(id).exec();
     if (!channel) return { success: false, message: "Kênh không tồn tại" };
 

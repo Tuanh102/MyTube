@@ -20,6 +20,7 @@ export async function POST(req: Request) {
         const thumbnailPublicId = formData.get('thumbnailPublicId');
         const duration = formData.get('duration');
         const categoryId = formData.get('categoryId');
+        const fingerprint = formData.get('fingerprint');
 
         const res = await fetch(`http://127.0.0.1:5000/videos`, {
             method: 'POST',
@@ -36,7 +37,8 @@ export async function POST(req: Request) {
                 category_id: categoryId,
                 is_short: Number(duration) <= 90,
                 price: Number(formData.get('price')),
-                is_free: formData.get('is_free') === 'true'
+                is_free: formData.get('is_free') === 'true',
+                fingerprint: fingerprint || undefined
             })
         });
 

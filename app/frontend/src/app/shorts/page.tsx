@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import ShortsPage from "@/views/pages/ShortsPage";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";

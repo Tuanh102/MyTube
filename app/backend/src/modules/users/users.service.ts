@@ -11,7 +11,7 @@ export class UsersService {
   }
 
   async getUserById(id: string) {
-    if (!id) return null;
+    if (!id || id === "undefined" || id === "null") return null;
 
     let user = null;
     // 1. Kiểm tra nếu là MongoDB ObjectId hợp lệ (24 ký tự hex)
@@ -46,12 +46,12 @@ export class UsersService {
   }
 
   async getUserByEmail(email: string) {
-    if (!email) return null;
+    if (!email || email === "undefined" || email === "null") return null;
     return this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 
   async getUserByUsername(username: string) {
-    if (!username) return null;
+    if (!username || username === "undefined" || username === "null") return null;
     return this.userModel.findOne({ username }).exec();
   }
 
@@ -93,13 +93,10 @@ export class UsersService {
     email: string;
     avatar: string;
   }) {
-    let user = null;
-    if (googleData.google_id) {
-      user = await this.userModel.findOne({ google_id: googleData.google_id }).exec();
+    if (!googleData.google_id || googleData.google_id === "undefined" || googleData.google_id === "null") {
+      throw new Error("Google ID hợp lệ là bắt buộc");
     }
-    if (!user && googleData.email && googleData.email.trim() !== "") {
-      user = await this.userModel.findOne({ email: googleData.email.toLowerCase() }).exec();
-    }
+    let user = await this.userModel.findOne({ google_id: googleData.google_id }).exec();
 
     if (user) {
       // Update existing user info from Google
@@ -127,29 +124,17 @@ export class UsersService {
     email: string;
     avatar: string;
   }) {
+    if (!facebookData.facebook_id || facebookData.facebook_id === "undefined" || facebookData.facebook_id === "null") {
+      throw new Error("Facebook ID hợp lệ là bắt buộc");
+    }
     console.log("[FACEBOOK LOGIN] Dữ liệu nhận từ Client:", facebookData);
 
     try {
-      let user;
-
-      // Chỉ tìm kiếm theo email nếu email thực sự hợp lệ (không rỗng)
-      if (facebookData.email && facebookData.email.trim() !== "") {
-        user = await this.userModel
-          .findOne({
-            $or: [
-              { facebook_id: facebookData.facebook_id },
-              { email: facebookData.email.toLowerCase() },
-            ],
-          })
-          .exec();
-      } else {
-        // Nếu không có email, chỉ tìm chính xác theo facebook_id
-        user = await this.userModel
-          .findOne({
-            facebook_id: facebookData.facebook_id,
-          })
-          .exec();
-      }
+      let user = await this.userModel
+        .findOne({
+          facebook_id: facebookData.facebook_id,
+        })
+        .exec();
 
       if (user) {
         console.log(
@@ -199,29 +184,17 @@ export class UsersService {
     email: string;
     avatar: string;
   }) {
+    if (!githubData.github_id || githubData.github_id === "undefined" || githubData.github_id === "null") {
+      throw new Error("Github ID hợp lệ là bắt buộc");
+    }
     console.log("[GITHUB LOGIN] Dữ liệu nhận từ Client:", githubData);
 
     try {
-      let user;
-
-      // Chỉ tìm kiếm theo email nếu email thực sự hợp lệ (không rỗng)
-      if (githubData.email && githubData.email.trim() !== "") {
-        user = await this.userModel
-          .findOne({
-            $or: [
-              { github_id: githubData.github_id },
-              { email: githubData.email.toLowerCase() },
-            ],
-          })
-          .exec();
-      } else {
-        // Nếu không có email, chỉ tìm chính xác theo github_id
-        user = await this.userModel
-          .findOne({
-            github_id: githubData.github_id,
-          })
-          .exec();
-      }
+      let user = await this.userModel
+        .findOne({
+          github_id: githubData.github_id,
+        })
+        .exec();
 
       if (user) {
         console.log(
@@ -263,29 +236,17 @@ export class UsersService {
     email: string;
     avatar: string;
   }) {
+    if (!discordData.discord_id || discordData.discord_id === "undefined" || discordData.discord_id === "null") {
+      throw new Error("Discord ID hợp lệ là bắt buộc");
+    }
     console.log("[DISCORD LOGIN] Dữ liệu nhận từ Client:", discordData);
 
     try {
-      let user;
-
-      // Chỉ tìm kiếm theo email nếu email thực sự hợp lệ (không rỗng)
-      if (discordData.email && discordData.email.trim() !== "") {
-        user = await this.userModel
-          .findOne({
-            $or: [
-              { discord_id: discordData.discord_id },
-              { email: discordData.email.toLowerCase() },
-            ],
-          })
-          .exec();
-      } else {
-        // Nếu không có email, chỉ tìm chính xác theo discord_id
-        user = await this.userModel
-          .findOne({
-            discord_id: discordData.discord_id,
-          })
-          .exec();
-      }
+      let user = await this.userModel
+        .findOne({
+          discord_id: discordData.discord_id,
+        })
+        .exec();
 
       if (user) {
         console.log(
@@ -328,6 +289,9 @@ export class UsersService {
   }
 
   async getHistory(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
     let user = await this.userModel
       .findById(new Types.ObjectId(userId))
       .populate({
@@ -349,6 +313,9 @@ export class UsersService {
   }
 
   async getPurchasedVideos(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
     let user = await this.userModel
       .findById(new Types.ObjectId(userId))
       .populate({
@@ -371,6 +338,9 @@ export class UsersService {
   }
 
   async addToHistory(userId: string, videoId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false };
+    }
     const user = await this.userModel
       .findById(new Types.ObjectId(userId))
       .exec();
@@ -395,6 +365,9 @@ export class UsersService {
   }
 
   async upgradePremium(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      throw new Error("Không tìm thấy người dùng này");
+    }
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new Error("Không tìm thấy người dùng này");
@@ -475,6 +448,9 @@ export class UsersService {
       premium_show_comment_aura?: boolean;
     },
   ) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      throw new Error("Không tìm thấy người dùng này");
+    }
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new Error("Không tìm thấy người dùng này");
@@ -495,6 +471,12 @@ export class UsersService {
   async donate(senderId: string, receiverId: string, amount: number) {
     if (amount <= 0) {
       throw new Error("Số tiền quyên góp phải lớn hơn 0");
+    }
+    if (!senderId || senderId === "undefined" || senderId === "null" || !Types.ObjectId.isValid(senderId)) {
+      throw new Error("Không tìm thấy tài khoản người gửi");
+    }
+    if (!receiverId || receiverId === "undefined" || receiverId === "null" || !Types.ObjectId.isValid(receiverId)) {
+      throw new Error("Không tìm thấy tài khoản người nhận");
     }
     if (senderId === receiverId) {
       throw new Error("Bạn không thể tự quyên góp cho bản thân");

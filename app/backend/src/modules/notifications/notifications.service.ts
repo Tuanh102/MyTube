@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import {
   Notification,
   NotificationDocument,
@@ -19,6 +19,9 @@ export class NotificationsService {
   }
 
   async getUserNotifications(userId: string, filter: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
     const query: any = { user: userId };
     if (filter === "unread") {
       query.is_read = false;
@@ -27,6 +30,9 @@ export class NotificationsService {
   }
 
   async markAllRead(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false };
+    }
     await this.notificationModel
       .updateMany({ user: userId, is_read: false }, { is_read: true })
       .exec();
@@ -46,6 +52,9 @@ export class NotificationsService {
   }
 
   async clearAll(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false };
+    }
     await this.notificationModel.deleteMany({ user: userId }).exec();
     return { success: true };
   }

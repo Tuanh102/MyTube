@@ -23,6 +23,11 @@ export class VideosController {
     return this.videosService.getHomeVideos(search, userId, categoryId);
   }
 
+  @Post("check-copyright")
+  async checkCopyright(@Body() dto: { fingerprint: string; title: string; description?: string; channelId: string }) {
+    return this.videosService.checkCopyright(dto);
+  }
+
   @Get("studio")
   async getStudioVideos(
     @Query("channelId") channelId?: string,

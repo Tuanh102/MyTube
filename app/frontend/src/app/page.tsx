@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import VideoCard from "@/views/components/VideoCard";
 import HomeBanner from "@/views/components/HomeBanner";
 // Legacy imports removed

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string; action: string } }
+  { params }: { params: Promise<{ id: string; action: string }> }
 ) {
-  const { id, action } = params;
+  const { id, action } = await params;
   try {
     const res = await fetch(`http://127.0.0.1:5000/api/admin/users/${id}/${action}`, {
       method: 'POST',

@@ -8,6 +8,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Video, VideoDocument } from "./schemas/video.schema";
 import { User, UserDocument } from "../users/schemas/user.schema";
+import { Fingerprint, FingerprintDocument } from "./schemas/fingerprint.schema";
 import { v2 as cloudinary } from "cloudinary";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -31,6 +32,7 @@ export class VideosService {
   constructor(
     @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Fingerprint.name) private fingerprintModel: Model<FingerprintDocument>,
     private notificationsService: NotificationsService,
   ) {}
 
@@ -49,7 +51,8 @@ export class VideosService {
     }
   }
   async checkUserStatus(userId?: string) {
-    if (userId && Types.ObjectId.isValid(userId)) {
+    if (!userId || userId === "undefined" || userId === "null") return;
+    if (Types.ObjectId.isValid(userId)) {
       const user = await this.userModel.findById(userId).select("status").exec();
       if (user && (user.status === "LOCKED" || user.status === "DELETED")) {
         throw new HttpException(
@@ -61,9 +64,12 @@ export class VideosService {
   }
 
   async checkPermission(video: any, userId?: string): Promise<boolean> {
-    const isPaid = video.is_free === false && video.price > 0;
+    const isPaid =
+      video.is_free === false ||
+      String(video.is_free) === "false" ||
+      (video.price && Number(video.price) > 0);
     if (!isPaid) return true;
-    if (!userId) return false;
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) return false;
 
     try {
       // 1. Kiểm tra nếu user đã mua video
@@ -188,13 +194,117 @@ Do not wrap your response in markdown formatting or write anything other than th
     }
   }
 
+  async checkCopyright(dto: { fingerprint: string; title: string; description?: string; channelId: string }) {
+    let isViolation = false;
+    let reason = "";
+
+    // 1. Kiểm tra vân tay trước
+    if (dto.fingerprint) {
+      const match = await this.fingerprintModel.findOne({ fingerprint: dto.fingerprint }).exec();
+      if (match) {
+        isViolation = true;
+        reason = `Phát hiện tệp video trùng lặp hoàn toàn với video đã tồn tại trên hệ thống (Tiêu đề gốc: "${match.title}").`;
+      }
+    }
+
+    // 2. Nếu không trùng vân tay, dùng Gemini kiểm tra tiêu đề/mô tả trùng lặp
+    if (!isViolation) {
+      isViolation = await this.checkCopyrightViolation({
+        title: dto.title,
+        description: dto.description || "",
+        channel: dto.channelId,
+      });
+      if (isViolation) {
+        reason = "Phát hiện nội dung (tiêu đề/mô tả) trùng lặp bản quyền cực kỳ giống với một video khác trên hệ thống.";
+      }
+    }
+
+    // Nếu vi phạm bản quyền, xử lý cộng gậy cảnh cáo hoặc khóa kênh
+    if (isViolation) {
+      const channelId = dto.channelId;
+      const channel = await this.videoModel.db
+        .model("Channel")
+        .findById(channelId)
+        .exec();
+      if (channel) {
+        channel.strikes = (channel.strikes || 0) + 1;
+        if (channel.strikes >= 3) {
+          channel.status = "BANNED";
+          await channel.save();
+          // Reject all videos from this channel
+          await this.videoModel.updateMany(
+            { channel: channelId },
+            { status: "REJECTED" },
+          );
+          throw new HttpException(
+            `Kênh của bạn đã bị KHÓA vĩnh viễn do nhận đủ 3 gậy bản quyền trùng lặp nội dung. Lý do: ${reason}`,
+            HttpStatus.FORBIDDEN,
+          );
+        } else {
+          await channel.save();
+          throw new HttpException(
+            `Phát hiện trùng lặp nội dung bản quyền. Kênh của bạn nhận thêm 1 gậy cảnh cáo (${channel.strikes}/3). Lý do: ${reason}`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else {
+        throw new HttpException(
+          `Phát hiện trùng lặp nội dung bản quyền. Lý do: ${reason}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    return {
+      success: true,
+      message: "Video hợp lệ.",
+    };
+  }
+
   async expandSearchQuery(search: string): Promise<string[]> {
+    const cleanQuery = (search || "").trim().toLowerCase();
+    
+    // 1. Khởi tạo mảng các từ khóa mở rộng với từ khóa gốc
+    let expandedTerms: string[] = [search];
+
+    // 2. Thêm các từ khóa từ từ điển đồng nghĩa cục bộ (Local Fallback)
+    const fallbackSynonyms: Record<string, string[]> = {
+      "music": ["music", "nhạc", "nhac", "bài hát", "bai hat", "âm nhạc", "am nhac", "ca khúc", "ca khuc", "song"],
+      "nhạc": ["nhạc", "nhac", "music", "song", "bài hát", "bai hat", "âm nhạc", "am nhac", "ca khúc", "ca khuc"],
+      "nhac": ["nhạc", "nhac", "music", "song", "bài hát", "bai hat", "âm nhạc", "am nhac", "ca khúc", "ca khuc"],
+      "song": ["song", "bài hát", "bai hat", "music", "nhạc", "nhac", "ca khúc"],
+      "bài hát": ["song", "bài hát", "bai hat", "music", "nhạc", "nhac", "ca khúc"],
+      "bai hat": ["song", "bài hát", "bai hat", "music", "nhạc", "nhac", "ca khúc"],
+      "phim": ["phim", "movie", "film", "cinema", "video", "clip"],
+      "movie": ["movie", "phim", "film", "video", "clip"],
+      "film": ["film", "phim", "movie", "video", "clip"],
+      "game": ["game", "gaming", "trò chơi", "tro choi", "chơi game", "play"],
+      "gaming": ["game", "gaming", "trò chơi", "tro choi", "chơi game"],
+      "trò chơi": ["game", "gaming", "trò chơi", "tro choi", "chơi game"],
+      "tro choi": ["game", "gaming", "trò chơi", "tro choi", "chơi game"],
+      "live": ["live", "livestream", "trực tiếp", "truc tiep", "stream"],
+      "livestream": ["live", "livestream", "trực tiếp", "truc tiep", "stream"],
+      "trực tiếp": ["live", "livestream", "trực tiếp", "truc tiep", "stream"],
+      "truc tiep": ["live", "livestream", "trực tiếp", "truc tiep", "stream"],
+      "học": ["học", "hoc", "learn", "study", "hướng dẫn", "tutorial"],
+      "hoc": ["học", "hoc", "learn", "study", "hướng dẫn", "tutorial"],
+      "learn": ["học", "hoc", "learn", "study", "hướng dẫn", "tutorial"],
+      "study": ["học", "hoc", "learn", "study", "hướng dẫn", "tutorial"],
+      "hướng dẫn": ["hướng dẫn", "huong dan", "tutorial", "guide", "how to"],
+      "huong dan": ["hướng dẫn", "huong dan", "tutorial", "guide", "how to"],
+      "tutorial": ["tutorial", "guide", "hướng dẫn", "huong dan", "how to"],
+    };
+
+    // Tra cứu đồng nghĩa cho bất cứ từ khóa nào xuất hiện trong query gốc
+    for (const key of Object.keys(fallbackSynonyms)) {
+      if (cleanQuery.includes(key)) {
+        expandedTerms = Array.from(new Set([...expandedTerms, ...fallbackSynonyms[key]]));
+      }
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn(
-        "[Gemini AI] GEMINI_API_KEY is not defined. Skipping search query expansion.",
-      );
-      return [search];
+      return expandedTerms;
     }
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -218,12 +328,12 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
       }
       const terms = JSON.parse(jsonString.trim());
       if (Array.isArray(terms) && terms.length > 0) {
-        return terms;
+        expandedTerms = Array.from(new Set([...expandedTerms, ...terms]));
       }
-      return [search];
+      return expandedTerms;
     } catch (err) {
       console.error("[expandSearchQuery Error]:", err);
-      return [search];
+      return expandedTerms;
     }
   }
 
@@ -233,12 +343,11 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
 
     if (search) {
       const searchTerms = await this.expandSearchQuery(search);
-      const searchConditions = searchTerms.map((term) => ({
-        $or: [
-          { title: { $regex: makeDiacriticRegex(term), $options: "i" } },
-          { description: { $regex: makeDiacriticRegex(term), $options: "i" } },
-        ],
-      }));
+      const searchConditions: any[] = [];
+      for (const term of searchTerms) {
+        searchConditions.push({ title: { $regex: makeDiacriticRegex(term), $options: "i" } });
+        searchConditions.push({ description: { $regex: makeDiacriticRegex(term), $options: "i" } });
+      }
       query.$or = searchConditions;
 
       let videos = await this.videoModel
@@ -281,7 +390,7 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
 
     let recommendedCategoryId: string | null = null;
 
-    if (userId && !categoryId && !search) {
+    if (userId && userId !== "undefined" && userId !== "null" && Types.ObjectId.isValid(userId) && !categoryId && !search) {
       try {
         const user = await this.userModel
           .findById(userId)
@@ -385,34 +494,36 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   }
 
   async create(createVideoDto: any) {
-    // 1. Kiểm tra bản quyền trùng lặp bằng Gemini
-    const isViolation = await this.checkCopyrightViolation(createVideoDto);
-    if (isViolation) {
-      const channelId = createVideoDto.channel;
-      const channel = await this.videoModel.db
-        .model("Channel")
-        .findById(channelId)
-        .exec();
-      if (channel) {
-        channel.strikes = (channel.strikes || 0) + 1;
-        if (channel.strikes >= 3) {
-          channel.status = "BANNED";
-          await channel.save();
-          // Reject all videos from this channel
-          await this.videoModel.updateMany(
-            { channel: channelId },
-            { status: "REJECTED" },
-          );
-          throw new HttpException(
-            "Kênh của bạn đã bị KHÓA vĩnh viễn do nhận đủ 3 gậy bản quyền trùng lặp nội dung.",
-            HttpStatus.FORBIDDEN,
-          );
-        } else {
-          await channel.save();
-          throw new HttpException(
-            `Phát hiện trùng lặp nội dung bản quyền. Kênh của bạn nhận thêm 1 gậy cảnh cáo (${channel.strikes}/3).`,
-            HttpStatus.BAD_REQUEST,
-          );
+    // 1. Kiểm tra bản quyền trùng lặp bằng Gemini chỉ khi chưa check bằng vân tay trước đó
+    if (!createVideoDto.fingerprint) {
+      const isViolation = await this.checkCopyrightViolation(createVideoDto);
+      if (isViolation) {
+        const channelId = createVideoDto.channel;
+        const channel = await this.videoModel.db
+          .model("Channel")
+          .findById(channelId)
+          .exec();
+        if (channel) {
+          channel.strikes = (channel.strikes || 0) + 1;
+          if (channel.strikes >= 3) {
+            channel.status = "BANNED";
+            await channel.save();
+            // Reject all videos from this channel
+            await this.videoModel.updateMany(
+              { channel: channelId },
+              { status: "REJECTED" },
+            );
+            throw new HttpException(
+              "Kênh của bạn đã bị KHÓA vĩnh viễn do nhận đủ 3 gậy bản quyền trùng lặp nội dung.",
+              HttpStatus.FORBIDDEN,
+            );
+          } else {
+            await channel.save();
+            throw new HttpException(
+              `Phát hiện trùng lặp nội dung bản quyền. Kênh của bạn nhận thêm 1 gậy cảnh cáo (${channel.strikes}/3).`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
       }
     }
@@ -426,6 +537,21 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
       status: "APPROVED",
     });
     const savedVideo = await newVideo.save();
+
+    // 2. Đăng ký dấu vân tay mới của video để chặn trùng lặp sau này
+    if (createVideoDto.fingerprint) {
+      try {
+        await new this.fingerprintModel({
+          fingerprint: createVideoDto.fingerprint,
+          title: savedVideo.title,
+          video: savedVideo._id,
+          channel: savedVideo.channel,
+        }).save();
+        console.log(`[Fingerprint Registered]: ${createVideoDto.fingerprint}`);
+      } catch (fErr) {
+        console.error("[Fingerprint Registration Error]:", fErr);
+      }
+    }
 
     try {
       const channelId = createVideoDto.channel;
@@ -488,7 +614,7 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   }
 
   async getStudioVideos(channelId?: string, search?: string, userId?: string) {
-    if (!userId) {
+    if (!userId || userId === "undefined" || userId === "null") {
       throw new HttpException("Missing userId", HttpStatus.BAD_REQUEST);
     }
     await this.checkUserStatus(userId);
@@ -570,7 +696,7 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   }
 
   async getStudioOverview(userId: string, channelId?: string) {
-    if (!userId) {
+    if (!userId || userId === "undefined" || userId === "null") {
       throw new HttpException("Missing userId", HttpStatus.BAD_REQUEST);
     }
     // 1. Get relevant channels
@@ -650,6 +776,9 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
     };
   }
   async toggleLike(id: string, userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false };
+    }
     const userObjId = new Types.ObjectId(userId);
     const video = await this.videoModel.findById(id);
     if (!video) return { success: false };
@@ -682,6 +811,9 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   }
 
   async toggleDislike(id: string, userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return { success: false };
+    }
     const userObjId = new Types.ObjectId(userId);
     const video = await this.videoModel.findById(id);
     if (!video) return { success: false };
@@ -716,6 +848,9 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   }
 
   async getLikedVideos(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
     await this.checkUserStatus(userId);
     try {
       const userObjId = new Types.ObjectId(userId);

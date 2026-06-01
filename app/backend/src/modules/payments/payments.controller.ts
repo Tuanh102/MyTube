@@ -32,6 +32,9 @@ export class PaymentsController {
     },
   ) {
     const { amount, description, userId, videoId } = body;
+    if (!userId || userId === "undefined" || userId === "null") {
+      throw new BadRequestException("Mã người dùng (userId) không hợp lệ");
+    }
     try {
       const paymentLink = await this.paymentsService.createPaymentLink(
         amount,
@@ -75,7 +78,9 @@ export class PaymentsController {
     @Body() body: { userId: string; videoId: string; orderId?: number },
   ) {
     const { userId, videoId, orderId } = body;
-
+    if (!userId || userId === "undefined" || userId === "null") {
+      throw new BadRequestException("Mã người dùng (userId) không hợp lệ");
+    }
     if (!orderId) {
       throw new BadRequestException(
         "Mã đơn hàng (orderId) là bắt buộc để xác thực",
@@ -144,6 +149,9 @@ export class PaymentsController {
     },
   ) {
     const { userId, amount, bankName, bankAccount, bankAccountHolder } = body;
+    if (!userId || userId === "undefined" || userId === "null") {
+      throw new BadRequestException("Mã người dùng (userId) không hợp lệ");
+    }
     try {
       const withdrawal = await this.paymentsService.requestWithdrawal(
         userId,
@@ -165,6 +173,9 @@ export class PaymentsController {
 
   @Get("withdrawals/user/:userId")
   async getUserWithdrawals(@Param("userId") userId: string) {
+    if (!userId || userId === "undefined" || userId === "null") {
+      return [];
+    }
     try {
       return await this.paymentsService.getUserWithdrawals(userId);
     } catch (err: any) {

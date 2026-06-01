@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
@@ -13,9 +15,15 @@ export async function GET(req: Request) {
     const videoId = searchParams.get('videoId') || 'all';
 
     try {
-        const res = await fetch(`http://127.0.0.1:5000/comments/studio?userId=${user.id}&videoId=${videoId}`);
+        const res = await fetch(`http://127.0.0.1:5000/comments/studio?userId=${user.id}&videoId=${videoId}`, {
+            cache: 'no-store'
+        });
         const data = await res.json();
-        return NextResponse.json(data);
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0, must-revalidate'
+            }
+        });
     } catch (err: any) {
         console.error("Studio comments fetch error:", err);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

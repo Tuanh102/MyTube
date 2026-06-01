@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -95,6 +96,13 @@ export default function AdminPage() {
     // Real dynamic datasets
     const [usersList, setUsersList] = useState<any[]>([]);
     const [staffList, setStaffList] = useState<any[]>([]);
+    const [showStaffModal, setShowStaffModal] = useState(false);
+    const [staffName, setStaffName] = useState('');
+    const [staffEmail, setStaffEmail] = useState('');
+    const [staffPassword, setStaffPassword] = useState('');
+    const [staffError, setStaffError] = useState('');
+    const [staffSuccess, setStaffSuccess] = useState('');
+    const [isCreatingStaff, setIsCreatingStaff] = useState(false);
 
     // Channel management
     const [allChannels, setAllChannels] = useState<any[]>([]);
@@ -180,6 +188,8 @@ export default function AdminPage() {
     
     // Notifications and Action States
     const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notificationTab, setNotificationTab] = useState<'all' | 'withdrawals'>('all');
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
     const [isSubmittingAction, setIsSubmittingAction] = useState(false);
@@ -382,6 +392,66 @@ export default function AdminPage() {
         }
     };
 
+    const fetchNotifications = async () => {
+        const adminData = sessionStorage.getItem('admin_token');
+        if (!adminData || adminData === "undefined") return;
+        try {
+            const adminObj = JSON.parse(adminData);
+            if (!adminObj || !adminObj._id) return;
+            const res = await fetch(`/notifications?userId=${adminObj._id}`);
+            const data = await res.json();
+            if (res.ok && Array.isArray(data)) {
+                setNotifications(data);
+            }
+        } catch (err) {
+            console.error('[FETCH NOTIFICATIONS ERROR]:', err);
+        }
+    };
+
+    const handleMarkNotificationRead = async (notificationId: string) => {
+        try {
+            const res = await fetch(`/notifications/${notificationId}/read`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                setNotifications(prev => prev.map(n => n.notification_id === notificationId ? { ...n, is_read: 1 } : n));
+            }
+        } catch (err) {
+            console.error('[MARK READ ERROR]:', err);
+        }
+    };
+
+    const handleMarkAllNotificationsRead = async () => {
+        const adminData = sessionStorage.getItem('admin_token');
+        if (!adminData || adminData === "undefined") return;
+        try {
+            const adminObj = JSON.parse(adminData);
+            if (!adminObj || !adminObj._id) return;
+            const res = await fetch(`/notifications/read-all`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: adminObj._id })
+            });
+            if (res.ok) {
+                setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+            }
+        } catch (err) {
+            console.error('[MARK ALL READ ERROR]:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (!admin || !admin._id) return;
+        fetchNotifications();
+        const intervalId = setInterval(() => {
+            fetchNotifications();
+            fetchWithdrawals();
+            fetchTransactions();
+            fetchStats();
+        }, 10000);
+        return () => clearInterval(intervalId);
+    }, [admin]);
+
     const handleLogout = () => {
         sessionStorage.removeItem('admin_token');
         router.push('/admin/login');
@@ -514,6 +584,42 @@ export default function AdminPage() {
             }
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleCreateStaff = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setStaffError('');
+        setStaffSuccess('');
+        setIsCreatingStaff(true);
+        try {
+            const res = await fetch('/api/admin/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: staffName,
+                    email: staffEmail,
+                    password: staffPassword
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setStaffSuccess('Cấp tài khoản Staff thành công!');
+                setStaffName('');
+                setStaffEmail('');
+                setStaffPassword('');
+                fetchStaff();
+                setTimeout(() => {
+                    setShowStaffModal(false);
+                    setStaffSuccess('');
+                }, 1500);
+            } else {
+                setStaffError(data.error || 'Có lỗi xảy ra khi tạo Staff');
+            }
+        } catch (err) {
+            setStaffError('Lỗi kết nối tới máy chủ');
+        } finally {
+            setIsCreatingStaff(false);
         }
     };
 
@@ -733,13 +839,16 @@ export default function AdminPage() {
     };
 
     const getChartData = () => {
-        if (chartDataType === 'revenue') {
-            return [150000, 250000, 180000, 320000, 450000, 280000, 390000, 520000, 480000, 600000];
-        } else if (chartDataType === 'users') {
-            return [3, 5, 4, 8, 12, 6, 9, 15, 11, 14];
-        } else {
-            return [250, 420, 380, 610, 800, 520, 710, 950, 880, 1050];
+        if (stats && stats.chartData) {
+            if (chartDataType === 'revenue') {
+                return stats.chartData.revenue || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            } else if (chartDataType === 'users') {
+                return stats.chartData.users || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            } else {
+                return stats.chartData.traffic || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            }
         }
+        return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     };
 
     const getGreeting = () => {
@@ -784,6 +893,7 @@ export default function AdminPage() {
     // Calculate pending count
     const pendingWithdrawals = withdrawals.filter(w => w.status === 'PENDING');
     const pendingCount = pendingWithdrawals.length;
+    const unreadNotificationsCount = notifications.filter(n => n.is_read === 0).length;
 
     // Handle Manual approval
     const [isCheckingManual, setIsCheckingManual] = useState(false);
@@ -1196,57 +1306,119 @@ export default function AdminPage() {
                                 className="p-2 text-white/60 hover:text-white transition-colors relative bg-white/5 rounded-full hover:bg-white/10"
                             >
                                 <Bell size={18} />
-                                {pendingCount > 0 && (
+                                {(unreadNotificationsCount + pendingCount) > 0 && (
                                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black animate-pulse">
-                                        {pendingCount}
+                                        {unreadNotificationsCount + pendingCount}
                                     </span>
                                 )}
                             </button>
 
                             {/* Dropdown Container */}
                             {showNotifications && (
-                                <div className="absolute right-0 mt-3 w-80 bg-[#121212] border border-white/10 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-3">
-                                        <h4 className="font-bold text-xs uppercase tracking-wider text-white">Yêu cầu rút tiền mới</h4>
-                                        <span className="bg-red-600/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingCount} chờ duyệt</span>
+                                <div className="absolute right-0 mt-3 w-80 bg-[#121212] border border-white/10 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200 text-zinc-100">
+                                    {/* Tabs Selector */}
+                                    <div className="flex border-b border-white/5 mb-3 gap-2">
+                                        <button 
+                                            onClick={() => setNotificationTab('all')}
+                                            className={`pb-2 text-xs font-bold uppercase tracking-wider relative flex-1 text-center transition-colors cursor-pointer ${notificationTab === 'all' ? 'text-red-500 border-b-2 border-red-500 font-extrabold' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            Thông báo ({unreadNotificationsCount})
+                                        </button>
+                                        <button 
+                                            onClick={() => setNotificationTab('withdrawals')}
+                                            className={`pb-2 text-xs font-bold uppercase tracking-wider relative flex-1 text-center transition-colors cursor-pointer ${notificationTab === 'withdrawals' ? 'text-red-500 border-b-2 border-red-500 font-extrabold' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            Rút tiền ({pendingCount})
+                                        </button>
                                     </div>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-                                        {pendingWithdrawals.length > 0 ? (
-                                            pendingWithdrawals.map((withdrawal) => (
-                                                <div 
-                                                    key={withdrawal._id} 
-                                                    onClick={() => handleNotificationClick(withdrawal)}
-                                                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/5 group"
+
+                                    {notificationTab === 'all' && (
+                                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.03]">
+                                            <span className="text-[10px] text-white/40 uppercase font-black tracking-widest">Thông báo hệ thống</span>
+                                            {unreadNotificationsCount > 0 && (
+                                                <button 
+                                                    onClick={handleMarkAllNotificationsRead}
+                                                    className="text-[9px] text-red-500 hover:text-red-400 font-bold uppercase tracking-wider cursor-pointer"
                                                 >
-                                                    <img 
-                                                        src={withdrawal.userId?.avatar || '/assets/img/avata.jpg'} 
-                                                        className="w-8 h-8 rounded-full border border-white/10 object-cover mt-0.5" 
-                                                        alt="" 
-                                                    />
-                                                    <div className="flex-1 text-xs">
-                                                        <p className="font-bold text-white group-hover:text-red-500 transition-colors">
-                                                            {withdrawal.userId?.username || 'Creator Ẩn Danh'}
-                                                        </p>
-                                                        <p className="text-[10px] text-white/55 mt-0.5">
-                                                            Yêu cầu rút <span className="font-bold text-green-500">{formatVND(withdrawal.amount)}</span> qua {withdrawal.bankName}
-                                                        </p>
-                                                        <p className="text-[9px] text-white/20 mt-1">
-                                                            {new Date(withdrawal.createdAt).toLocaleDateString('vi-VN')} {new Date(withdrawal.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
-                                                        </p>
+                                                    Đọc tất cả
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                        {notificationTab === 'all' ? (
+                                            notifications.length > 0 ? (
+                                                notifications.map((notif) => (
+                                                    <div 
+                                                        key={notif.notification_id}
+                                                        onClick={() => handleMarkNotificationRead(notif.notification_id)}
+                                                        className={`flex items-start gap-3 p-2.5 rounded-xl transition-all cursor-pointer border border-transparent hover:border-white/5 hover:bg-white/5 relative group ${notif.is_read === 0 ? 'bg-white/[0.02]' : ''}`}
+                                                    >
+                                                        {notif.is_read === 0 && (
+                                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                                                        )}
+                                                        <img 
+                                                            src={notif.actor_avatar || '/assets/img/avata.jpg'} 
+                                                            className="w-8 h-8 rounded-full border border-white/10 object-cover mt-0.5 flex-shrink-0" 
+                                                            alt="" 
+                                                        />
+                                                        <div className="flex-1 text-xs pr-2">
+                                                            <p className="font-bold text-white group-hover:text-red-500 transition-colors">
+                                                                {notif.actor_name}
+                                                            </p>
+                                                            <p className="text-[10px] text-white/60 mt-0.5 leading-relaxed">
+                                                                {notif.message}
+                                                            </p>
+                                                            <p className="text-[8px] text-white/25 mt-1 font-mono">
+                                                                {new Date(notif.created_at).toLocaleDateString('vi-VN')} {new Date(notif.created_at).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
+                                                            </p>
+                                                        </div>
                                                     </div>
+                                                ))
+                                            ) : (
+                                                <div className="py-8 text-center text-white/30 text-xs italic flex flex-col items-center gap-2">
+                                                    <span>Không có thông báo mới!</span>
                                                 </div>
-                                            ))
+                                            )
                                         ) : (
-                                            <div className="py-6 text-center text-white/30 text-xs italic flex flex-col items-center gap-2">
-                                                <CheckCircle2 size={24} className="text-green-500" />
-                                                <span>Không có yêu cầu chờ duyệt mới!</span>
-                                            </div>
+                                            pendingWithdrawals.length > 0 ? (
+                                                pendingWithdrawals.map((withdrawal) => (
+                                                    <div 
+                                                        key={withdrawal._id} 
+                                                        onClick={() => handleNotificationClick(withdrawal)}
+                                                        className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/5 group"
+                                                    >
+                                                        <img 
+                                                            src={withdrawal.userId?.avatar || '/assets/img/avata.jpg'} 
+                                                            className="w-8 h-8 rounded-full border border-white/10 object-cover mt-0.5 flex-shrink-0" 
+                                                            alt="" 
+                                                        />
+                                                        <div className="flex-1 text-xs">
+                                                            <p className="font-bold text-white group-hover:text-red-500 transition-colors">
+                                                                {withdrawal.userId?.username || 'Creator Ẩn Danh'}
+                                                            </p>
+                                                            <p className="text-[10px] text-white/55 mt-0.5">
+                                                                Yêu cầu rút <span className="font-bold text-green-500">{formatVND(withdrawal.amount)}</span> qua {withdrawal.bankName}
+                                                            </p>
+                                                            <p className="text-[9px] text-white/20 mt-1">
+                                                                {new Date(withdrawal.createdAt).toLocaleDateString('vi-VN')} {new Date(withdrawal.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="py-8 text-center text-white/30 text-xs italic flex flex-col items-center gap-2">
+                                                    <CheckCircle2 size={24} className="text-green-500 animate-bounce" />
+                                                    <span>Không có yêu cầu chờ duyệt mới!</span>
+                                                </div>
+                                            )
                                         )}
                                     </div>
-                                    {pendingWithdrawals.length > 0 && (
+                                    {notificationTab === 'withdrawals' && pendingWithdrawals.length > 0 && (
                                         <button 
                                             onClick={() => { setActiveTab('withdrawals'); setShowNotifications(false); }}
-                                            className="w-full text-center text-[10px] font-bold text-red-500 uppercase tracking-widest hover:text-red-400 transition-colors mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1"
+                                            className="w-full text-center text-[10px] font-bold text-red-500 uppercase tracking-widest hover:text-red-400 transition-colors mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1 cursor-pointer"
                                         >
                                             Xem tất cả <ChevronRight size={12} />
                                         </button>
@@ -2253,7 +2425,11 @@ export default function AdminPage() {
                                         <p className="text-zinc-500 dark:text-white/40 text-xs mt-1">Phân quyền, cấp khóa bảo mật, quản lý tài khoản điều hành viên hệ thống.</p>
                                     </div>
                                     <button 
-                                        onClick={() => alert("Vui lòng cấp tài khoản Staff qua CLI hoặc API Authentication để bảo mật lớp cứng.")}
+                                        onClick={() => {
+                                            setStaffError('');
+                                            setStaffSuccess('');
+                                            setShowStaffModal(true);
+                                        }}
                                         className="bg-gradient-to-r from-red-700 via-red-655 to-amber-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md border border-red-500/20"
                                     >
                                         Cấp quyền Staff mới
@@ -3548,6 +3724,88 @@ export default function AdminPage() {
                     </div>
                 </div>
             )}
-</div>
-);
+            {/* MODAL CẤP QUYỀN STAFF MỚI */}
+            {showStaffModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-[#121212] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 relative">
+                        <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-6">
+                            <ShieldCheck size={24} className="text-red-500" />
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase italic">Cấp Tài Khoản Staff Mới</h3>
+                                <p className="text-[10px] text-white/40">Tài khoản nhân viên điều hành và kiểm duyệt nội dung</p>
+                            </div>
+                        </div>
+
+                        {staffError && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3.5 rounded-2xl mb-4 text-xs font-semibold">
+                                {staffError}
+                            </div>
+                        )}
+
+                        {staffSuccess && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3.5 rounded-2xl mb-4 text-xs font-semibold">
+                                {staffSuccess}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreateStaff} className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block">Tên nhân viên *</label>
+                                <input
+                                    type="text"
+                                    value={staffName}
+                                    onChange={(e) => setStaffName(e.target.value)}
+                                    placeholder="Ví dụ: Nguyễn Văn A"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-red-500 transition text-sm font-semibold"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block">Email đăng nhập (ID) *</label>
+                                <input
+                                    type="email"
+                                    value={staffEmail}
+                                    onChange={(e) => setStaffEmail(e.target.value)}
+                                    placeholder="Ví dụ: nva@mytube.com"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-red-500 transition text-sm font-mono"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block">Mật khẩu *</label>
+                                <input
+                                    type="password"
+                                    value={staffPassword}
+                                    onChange={(e) => setStaffPassword(e.target.value)}
+                                    placeholder="Nhập mật khẩu"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-red-500 transition text-sm"
+                                    required
+                                    minLength={6}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStaffModal(false)}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition text-xs uppercase tracking-wider"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isCreatingStaff}
+                                    className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition text-xs uppercase tracking-wider shadow-lg shadow-red-600/15"
+                                >
+                                    {isCreatingStaff ? 'Đang tạo...' : 'Tạo Staff'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }

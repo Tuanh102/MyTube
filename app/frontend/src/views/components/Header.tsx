@@ -166,6 +166,8 @@ export default function Header() {
   useEffect(() => {
     if (user?.id) {
       fetchChannels();
+    } else {
+      setChannels([]);
     }
   }, [user?.id]);
   
@@ -194,7 +196,7 @@ export default function Header() {
 
   const fetchChannels = async () => {
     try {
-      const res = await fetch('/api/channels');
+      const res = await fetch('/api/channels', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.ok ? await res.json() : [];
         setChannels(data);
@@ -232,7 +234,7 @@ export default function Header() {
     }
 
     try {
-      const res = await fetch('/api/channels');
+      const res = await fetch('/api/channels', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setChannels(data);
@@ -316,7 +318,7 @@ export default function Header() {
   const fetchUnreadCount = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://127.0.0.1:5000/notifications?userId=${user.id}&filter=unread`);
+      const res = await fetch(`http://127.0.0.1:5000/notifications?userId=${user.id}&filter=unread`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -329,10 +331,14 @@ export default function Header() {
   };
 
   React.useEffect(() => {
-    fetchUnreadCount();
-    // Refresh mỗi 30 giây để cập nhật thông báo mới
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    if (user?.id) {
+      fetchUnreadCount();
+      // Refresh mỗi 30 giây để cập nhật thông báo mới
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
   }, [user?.id]);
 
   const [searchInput, setSearchInput] = useState('');
@@ -382,143 +388,147 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative" ref={liveDropdownRef}>
-          <button 
-            onClick={handleLiveClick}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-full transition text-white text-sm font-bold shadow-lg shadow-red-600/30 active:scale-95 cursor-pointer"
-          >
-            <Radio size={16} className="animate-pulse" />
-            <span className="hidden sm:inline">Live</span>
-          </button>
+        {user && (
+          <div className="relative" ref={liveDropdownRef}>
+            <button 
+              onClick={handleLiveClick}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-full transition text-white text-sm font-bold shadow-lg shadow-red-600/30 active:scale-95 cursor-pointer"
+            >
+              <Radio size={16} className="animate-pulse" />
+              <span className="hidden sm:inline">Live</span>
+            </button>
 
-          {isLiveModalOpen && (
-            <div className="absolute top-12 right-0 w-80 sm:w-96 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-5 z-[999] text-left animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-black text-white flex items-center gap-2">
-                  <Radio size={16} className="text-red-500 animate-pulse" /> 
-                  <span>Thiết lập Phát trực tiếp</span>
-                </h3>
-                <button 
-                  onClick={() => setIsLiveModalOpen(false)}
-                  className="text-white/40 hover:text-white transition text-xs font-bold cursor-pointer"
-                >
-                  Đóng
-                </button>
-              </div>
-
-              {!hasUsedLive ? (
-                <div className="space-y-4 text-center py-2">
-                  <div className="flex justify-center gap-4 text-red-500">
-                    <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
-                      <Camera size={24} />
-                    </div>
-                    <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
-                      <Mic size={24} />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-black text-white">Yêu cầu quyền truy cập Camera & Mic</h4>
-                    <p className="text-white/40 text-[10px] leading-relaxed">
-                      Để có thể phát trực tiếp và tương tác thời gian thực, vui lòng cấp quyền truy cập Camera và Microphone trên máy tính này.
-                    </p>
-                  </div>
-                  <button
-                    onClick={requestDevicePermissions}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg shadow-red-600/15"
-                  >
-                    Yêu cầu cấp quyền
-                  </button>
-                </div>
-              ) : channels.length === 0 ? (
-                <div className="space-y-4 text-center py-2">
-                  <div className="flex justify-center text-amber-500 animate-bounce">
-                    <Clapperboard size={36} />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-black text-white">Yêu cầu Kênh để Live</h4>
-                    <p className="text-white/40 text-[10px] leading-relaxed">
-                      Bạn cần sở hữu ít nhất một Kênh sáng tạo để có thể bắt đầu tính năng phát trực tiếp Live Stream trên MyTube.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsLiveModalOpen(false);
-                      setIsChannelModalOpen(true);
-                    }}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-zinc-950 font-extrabold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg"
-                  >
-                    Tạo kênh của bạn ngay
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleStartLive} className="space-y-4">
-                  {/* Tiêu đề live */}
-                  <div>
-                    <label className="text-[9px] font-black text-white/40 uppercase mb-1.5 block tracking-wider">Tiêu đề phiên Live</label>
-                    <input 
-                      type="text" 
-                      value={liveTitle}
-                      onChange={(e) => setLiveTitle(e.target.value)}
-                      placeholder="Ví dụ: Giao lưu cuối tuần cùng fan..."
-                      className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-white outline-none focus:border-red-500 transition text-xs"
-                      required
-                    />
-                  </div>
-
-                  {/* Lựa chọn tư cách phát */}
-                  <div>
-                    <label className="text-[9px] font-black text-white/40 uppercase mb-2 block tracking-wider">Phát dưới tư cách Kênh</label>
-                    <div className="grid grid-cols-1 gap-2 max-h-[140px] overflow-y-auto pr-1">
-                      {channels.map((chan) => (
-                        <div 
-                          key={chan._id}
-                          onClick={() => {
-                            setLiveIdentityType('channel');
-                            setLiveIdentityId(chan._id);
-                          }}
-                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${
-                            liveIdentityType === 'channel' && liveIdentityId === chan._id
-                              ? 'bg-red-500/10 border-red-500/50 shadow-md shadow-red-500/5' 
-                              : 'bg-white/5 border-white/5 hover:border-white/15'
-                          }`}
-                        >
-                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
-                            <img src={chan.logo || '/assets/img/avata.jpg'} className="w-full h-full object-cover" alt="Channel logo" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-white font-bold text-xs block truncate">{chan.channel_name}</span>
-                            <span className="text-white/40 text-[9px]">Kênh phát sóng</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
+            {isLiveModalOpen && (
+              <div className="absolute top-12 right-0 w-80 sm:w-96 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-5 z-[999] text-left animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <Radio size={16} className="text-red-500 animate-pulse" /> 
+                    <span>Thiết lập Phát trực tiếp</span>
+                  </h3>
                   <button 
-                    type="submit" 
-                    disabled={isCreatingLive}
-                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-black py-2.5 rounded-xl transition shadow-lg shadow-red-600/15 flex items-center justify-center gap-2 uppercase tracking-wider text-[10px] mt-2 cursor-pointer"
+                    onClick={() => setIsLiveModalOpen(false)}
+                    className="text-white/40 hover:text-white transition text-xs font-bold cursor-pointer"
                   >
-                    {isCreatingLive ? 'Đang chuẩn bị...' : 'Bắt đầu phát trực tiếp'}
+                    Đóng
                   </button>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
+                </div>
 
-        <button 
-          onClick={handleNotificationsClick}
-          title="Thông báo"
-          className="relative p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer"
-        >
-          <Bell size={22} />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+                {!hasUsedLive ? (
+                  <div className="space-y-4 text-center py-2">
+                    <div className="flex justify-center gap-4 text-red-500">
+                      <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                        <Camera size={24} />
+                      </div>
+                      <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                        <Mic size={24} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-white">Yêu cầu quyền truy cập Camera & Mic</h4>
+                      <p className="text-white/40 text-[10px] leading-relaxed">
+                        Để có thể phát trực tiếp và tương tác thời gian thực, vui lòng cấp quyền truy cập Camera và Microphone trên máy tính này.
+                      </p>
+                    </div>
+                    <button
+                      onClick={requestDevicePermissions}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg shadow-red-600/15"
+                    >
+                      Yêu cầu cấp quyền
+                    </button>
+                  </div>
+                ) : channels.length === 0 ? (
+                  <div className="space-y-4 text-center py-2">
+                    <div className="flex justify-center text-amber-500 animate-bounce">
+                      <Clapperboard size={36} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-white">Yêu cầu Kênh để Live</h4>
+                      <p className="text-white/40 text-[10px] leading-relaxed">
+                        Bạn cần sở hữu ít nhất một Kênh sáng tạo để có thể bắt đầu tính năng phát trực tiếp Live Stream trên MyTube.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsLiveModalOpen(false);
+                        setIsChannelModalOpen(true);
+                      }}
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-zinc-950 font-extrabold py-2.5 rounded-xl transition text-xs uppercase tracking-wider shadow-lg"
+                    >
+                      Tạo kênh của bạn ngay
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleStartLive} className="space-y-4">
+                    {/* Tiêu đề live */}
+                    <div>
+                      <label className="text-[9px] font-black text-white/40 uppercase mb-1.5 block tracking-wider">Tiêu đề phiên Live</label>
+                      <input 
+                        type="text" 
+                        value={liveTitle}
+                        onChange={(e) => setLiveTitle(e.target.value)}
+                        placeholder="Ví dụ: Giao lưu cuối tuần cùng fan..."
+                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-white outline-none focus:border-red-500 transition text-xs"
+                        required
+                      />
+                    </div>
+
+                    {/* Lựa chọn tư cách phát */}
+                    <div>
+                      <label className="text-[9px] font-black text-white/40 uppercase mb-2 block tracking-wider">Phát dưới tư cách Kênh</label>
+                      <div className="grid grid-cols-1 gap-2 max-h-[140px] overflow-y-auto pr-1">
+                        {channels.map((chan) => (
+                          <div 
+                            key={chan._id}
+                            onClick={() => {
+                              setLiveIdentityType('channel');
+                              setLiveIdentityId(chan._id);
+                            }}
+                            className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                              liveIdentityType === 'channel' && liveIdentityId === chan._id
+                                ? 'bg-red-500/10 border-red-500/50 shadow-md shadow-red-500/5' 
+                                : 'bg-white/5 border-white/5 hover:border-white/15'
+                            }`}
+                          >
+                            <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                              <img src={chan.logo || '/assets/img/avata.jpg'} className="w-full h-full object-cover" alt="Channel logo" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-white font-bold text-xs block truncate">{chan.channel_name}</span>
+                              <span className="text-white/40 text-[9px]">Kênh phát sóng</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={isCreatingLive}
+                      className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-black py-2.5 rounded-xl transition shadow-lg shadow-red-600/15 flex items-center justify-center gap-2 uppercase tracking-wider text-[10px] mt-2 cursor-pointer"
+                    >
+                      {isCreatingLive ? 'Đang chuẩn bị...' : 'Bắt đầu phát trực tiếp'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {user && (
+          <button 
+            onClick={handleNotificationsClick}
+            title="Thông báo"
+            className="relative p-2 hover:bg-white/10 rounded-full transition text-white cursor-pointer"
+          >
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Nút cài đặt giao diện Đa Chế Độ */}
         <div className="relative" ref={themeDropdownRef}>
@@ -834,29 +844,7 @@ export default function Header() {
               
               <div className="py-2">
                 <ul className="space-y-0.5 px-2">
-                  <li>
-                    {channels.length > 0 ? (
-                      <Link 
-                        href={`/channel/${channels[0]._id}`} 
-                        onClick={() => setIsAuthOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg text-white transition text-sm font-medium"
-                      >
-                        <UserCircle size={18} className="text-white/60" /> 
-                        <span>Trang cá nhân</span>
-                      </Link>
-                    ) : (
-                      <button 
-                        onClick={() => {
-                          setIsAuthOpen(false);
-                          setIsChannelModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg text-white transition text-sm font-medium text-left cursor-pointer"
-                      >
-                        <UserCircle size={18} className="text-white/60" /> 
-                        <span>Tạo kênh cá nhân</span>
-                      </button>
-                    )}
-                  </li>
+
                   <li>
                     <Link 
                       href="/studio" 

@@ -106,17 +106,31 @@ export default function StudioPage() {
     return () => clearTimeout(timer);
   }, [commentSearch]);
 
+  // Reset all states and fetch fresh data when user session changes
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
-    } else if (status === 'authenticated') {
-      if (!overviewData && !videos.length) {
-        fetchData(true);
-      } else {
-        fetchData(false);
-      }
+    } else if (status === 'authenticated' && session?.user?.id) {
+      // Clear old user's data from state to avoid UI leaks
+      setChannels([]);
+      setVideos([]);
+      setOverviewData(null);
+      setComments([]);
+      setTickets([]);
+      setWithdrawals([]);
+      setSelectedChannelId('all');
+      
+      // Fetch fresh data
+      fetchData(true);
     }
-  }, [status, selectedChannelId, debouncedSearch]);
+  }, [status, session?.user?.id]);
+
+  // Re-fetch data when search query or channel ID filter changes
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
+      fetchData(false);
+    }
+  }, [selectedChannelId, debouncedSearch]);
 
   const fetchComments = async () => {
     try {
@@ -130,7 +144,7 @@ export default function StudioPage() {
       if (debouncedCommentSearch) params.append('search', debouncedCommentSearch);
       if (unrepliedOnly) params.append('unreplied', 'true');
 
-      const res = await fetch(`/api/studio/comments?${params.toString()}`);
+      const res = await fetch(`/api/studio/comments?${params.toString()}`, { cache: 'no-store' });
       if (res.ok) setComments(await res.json());
     } catch (err) {
       console.error(err);
@@ -140,7 +154,7 @@ export default function StudioPage() {
   const fetchTickets = async () => {
     if (!session?.user?.id) return;
     try {
-      const res = await fetch(`/api/support/my-tickets?userId=${session.user.id}`);
+      const res = await fetch(`/api/support/my-tickets?userId=${session.user.id}`, { cache: 'no-store' });
       if (res.ok) setTickets(await res.json());
     } catch (err) {
       console.error(err);
@@ -150,7 +164,7 @@ export default function StudioPage() {
   const fetchWithdrawals = async () => {
     if (!session?.user?.id) return;
     try {
-      const res = await fetch(`/api/payments/withdrawals/${session.user.id}`);
+      const res = await fetch(`/api/payments/withdrawals/${session.user.id}`, { cache: 'no-store' });
       if (res.ok) setWithdrawals(await res.json());
     } catch (err) {
       console.error(err);
@@ -158,7 +172,7 @@ export default function StudioPage() {
   };
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && session?.user?.id) {
       if (activeTab === 'comments') {
         fetchComments();
       } else if (activeTab === 'revenue') {
@@ -166,7 +180,7 @@ export default function StudioPage() {
       }
       fetchTickets();
     }
-  }, [status, selectedVideoForComments, debouncedCommentSearch, unrepliedOnly, activeTab]);
+  }, [status, session?.user?.id, selectedVideoForComments, debouncedCommentSearch, unrepliedOnly, activeTab]);
 
   const handleTicketClick = async (ticket: any) => {
     setSelectedTicket(ticket);
@@ -195,9 +209,9 @@ export default function StudioPage() {
       })}`;
 
       const [channelsRes, videosRes, overviewRes] = await Promise.all([
-        fetch('/api/channels'),
-        fetch(videosUrl),
-        fetch(overviewUrl)
+        fetch('/api/channels', { cache: 'no-store' }),
+        fetch(videosUrl, { cache: 'no-store' }),
+        fetch(overviewUrl, { cache: 'no-store' })
       ]);
        
       if (channelsRes.ok) setChannels(await channelsRes.json());
@@ -525,10 +539,7 @@ export default function StudioPage() {
               <HelpCircle size={20} />
               <span className="font-medium">Hỗ trợ</span>
             </button>
-            <button className="w-full mt-4 flex items-center gap-4 px-4 py-3 rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition">
-              <Settings size={20} />
-              <span className="font-medium">Cài đặt</span>
-            </button>
+
           </nav>
         </div>
       </aside>

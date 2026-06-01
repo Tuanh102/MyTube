@@ -36,8 +36,7 @@ export default function LoginPage() {
       setError('Số điện thoại hoặc mật khẩu không đúng');
       setLoading(false);
     } else {
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     }
   };
 

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import StudioPage from "@/views/pages/StudioPage";
 import { Metadata } from "next";
 import { Suspense } from "react";

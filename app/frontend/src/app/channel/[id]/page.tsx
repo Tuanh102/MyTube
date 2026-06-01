@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import ChannelPage from "@/views/pages/ChannelPage";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";

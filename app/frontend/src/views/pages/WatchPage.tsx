@@ -62,7 +62,10 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     if (!video) return false;
     
     // 1. Kiểm tra video miễn phí (chỉ free khi không có giá tiền hoặc giá tiền bằng 0 và is_free không phải là false)
-    const isFree = video.is_free !== false && (!video.price || video.price === 0);
+    const isFree = 
+      video.is_free !== false && 
+      String(video.is_free) !== 'false' && 
+      (!video.price || Number(video.price) === 0);
     if (isFree) return true;
 
     // 2. Kiểm tra chủ sở hữu (phải đăng nhập trước, tức là user.id có giá trị thực sự)
@@ -100,7 +103,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     const fetchUserProfile = async () => {
       if (user?.id) {
         try {
-          const res = await fetch(`/api/users/profile/${user.id}`);
+          const res = await fetch(`/api/users/profile/${user.id}`, { cache: 'no-store' });
           if (res.ok) {
             const data = await res.json();
             console.log('User Profile Updated:', data.purchased_videos);
@@ -889,7 +892,8 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
 
   // Đánh chặn click video trả phí ở danh sách gợi ý đối với Guest chưa đăng nhập
   const handleRelatedVideoClick = (e: React.MouseEvent, item: any) => {
-    if (!user && item.is_free === false) {
+    const isFree = item.is_free !== false && String(item.is_free) !== 'false' && (!item.price || Number(item.price) === 0);
+    if (!user && !isFree) {
       e.preventDefault(); // Chặn chuyển hướng của Link
       const confirmLogin = window.confirm("Đây là video trả phí cao cấp. Bạn cần đăng nhập tài khoản để tiến hành mua bản quyền và thưởng thức video này. Click OK để đăng nhập ngay!");
       if (confirmLogin) {
@@ -900,7 +904,10 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
   };
 
   const checkHasPermission = (v: any) => {
-    const isFree = v.is_free !== false && (!v.price || v.price === 0);
+    const isFree = 
+      v.is_free !== false && 
+      String(v.is_free) !== 'false' && 
+      (!v.price || Number(v.price) === 0);
     if (isFree) return true;
 
     const purchasedVideos = currentUserData?.purchased_videos || user?.purchased_videos || [];
@@ -1598,7 +1605,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                         alt=""
                       />
                       
-                      {item.is_free === false && !checkHasPermission(item) && (
+                      {!(item.is_free !== false && String(item.is_free) !== 'false' && (!item.price || Number(item.price) === 0)) && !checkHasPermission(item) && (
                         <div className="absolute top-1.5 left-1.5 bg-red-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black z-10 shadow-lg flex items-center gap-1 animate-pulse">
                           <div className="w-1 h-1 bg-white rounded-full" />
                           TRẢ PHÍ

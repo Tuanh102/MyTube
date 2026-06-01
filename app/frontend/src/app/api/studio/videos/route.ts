@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
@@ -25,7 +27,9 @@ export async function GET(req: Request) {
             url += `&channelId=${channelId}`;
         } else {
             // Get all channels of user first
-            const channelsRes = await fetch(`http://127.0.0.1:5000/channels?userId=${user.id}`);
+            const channelsRes = await fetch(`http://127.0.0.1:5000/channels?userId=${user.id}`, {
+                cache: 'no-store'
+            });
             const channels = await channelsRes.json();
             const channelIds = channels.map((c: any) => c._id).join(',');
             if (channelIds) {
@@ -35,7 +39,9 @@ export async function GET(req: Request) {
             }
         }
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            cache: 'no-store'
+        });
         const data = await res.json();
         
         // Map data to match what StudioPage expects if needed
@@ -46,7 +52,11 @@ export async function GET(req: Request) {
             uploaded_at: v.createdAt
         }));
 
-        return NextResponse.json(formattedData);
+        return NextResponse.json(formattedData, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0, must-revalidate'
+            }
+        });
     } catch (err: any) {
         console.error("Studio videos error:", err);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

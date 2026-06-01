@@ -52,9 +52,8 @@ export class ChannelsController {
 
   @Get()
   async findByUser(@Query("userId") userId: string) {
-    // If no userId is provided, return all channels as fallback (or we can handle it safely)
-    if (!userId) {
-      return this.channelsService.findAll();
+    if (!userId || userId === "undefined" || userId === "null") {
+      return [];
     }
     return this.channelsService.findByUser(userId);
   }

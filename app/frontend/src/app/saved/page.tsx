@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import SavedPage from "@/views/pages/SavedPage";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/options";

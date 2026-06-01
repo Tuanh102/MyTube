@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
@@ -8,13 +10,24 @@ import { mkdir } from "fs/promises";
 export async function GET() {
     const session = await getServerSession(authOptions);
     const user = session?.user as any;
+    console.log(`[API/CHANNELS GET] Received request. Session User:`, user ? { id: user.id, name: user.name, email: user.email } : null);
     if (!user?.id) {
+        console.log(`[API/CHANNELS GET] Unauthorized request (no user.id).`);
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/channels?userId=${user.id}`);
+    const backendUrl = `http://127.0.0.1:5000/channels?userId=${user.id}`;
+    console.log(`[API/CHANNELS GET] Fetching channels from backend: ${backendUrl}`);
+    const res = await fetch(backendUrl, {
+        cache: 'no-store'
+    });
     const data = await res.json();
-    return NextResponse.json(data);
+    console.log(`[API/CHANNELS GET] Backend response data length:`, data?.length, data);
+    return NextResponse.json(data, {
+        headers: {
+            'Cache-Control': 'no-store, max-age=0, must-revalidate'
+        }
+    });
 }
 
 export async function POST(req: Request) {

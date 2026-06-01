@@ -431,8 +431,8 @@ export class PaymentsService implements OnModuleInit {
           });
 
           // Notify Admin and Staff
-          const adminStaffList = await this.userModel
-            .find({ role: { $in: ["admin", "staff"] } })
+          const adminStaffList = await this.adminModel
+            .find({ role: { $in: ["ADMIN", "STAFF"] } })
             .exec();
           for (const adminStaff of adminStaffList) {
             await this.notificationsService.createNotification({
@@ -495,8 +495,8 @@ export class PaymentsService implements OnModuleInit {
           target_id: "premium",
         });
 
-        const adminStaffList = await this.userModel
-          .find({ role: { $in: ["admin", "staff"] } })
+        const adminStaffList = await this.adminModel
+          .find({ role: { $in: ["ADMIN", "STAFF"] } })
           .exec();
         for (const adminStaff of adminStaffList) {
           await this.notificationsService.createNotification({
@@ -605,8 +605,8 @@ export class PaymentsService implements OnModuleInit {
         }
 
         // 3. Gửi thông báo cho Admin & Staff
-        const adminStaffList = await this.userModel
-          .find({ role: { $in: ["admin", "staff"] } })
+        const adminStaffList = await this.adminModel
+          .find({ role: { $in: ["ADMIN", "STAFF"] } })
           .exec();
         for (const adminStaff of adminStaffList) {
           await this.notificationsService.createNotification({
@@ -663,8 +663,8 @@ export class PaymentsService implements OnModuleInit {
     });
 
     // Notify Admin/Staff
-    const adminStaffList = await this.userModel
-      .find({ role: { $in: ["admin", "staff"] } })
+    const adminStaffList = await this.adminModel
+      .find({ role: { $in: ["ADMIN", "STAFF"] } })
       .exec();
     for (const adminStaff of adminStaffList) {
       await this.notificationsService.createNotification({
@@ -730,8 +730,8 @@ export class PaymentsService implements OnModuleInit {
     });
 
     // Notify Admin/Staff
-    const adminStaffList = await this.userModel
-      .find({ role: { $in: ["admin", "staff"] } })
+    const adminStaffList = await this.adminModel
+      .find({ role: { $in: ["ADMIN", "STAFF"] } })
       .exec();
     for (const adminStaff of adminStaffList) {
       await this.notificationsService.createNotification({
@@ -781,8 +781,8 @@ export class PaymentsService implements OnModuleInit {
         target_id: "wallet",
       });
 
-      const adminStaffList = await this.userModel
-        .find({ role: { $in: ["admin", "staff"] } })
+      const adminStaffList = await this.adminModel
+        .find({ role: { $in: ["ADMIN", "STAFF"] } })
         .exec();
       for (const adminStaff of adminStaffList) {
         await this.notificationsService.createNotification({

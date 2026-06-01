@@ -14,7 +14,7 @@ export class User {
   @Prop()
   password?: string;
 
-  @Prop({ unique: true, sparse: true })
+  @Prop()
   email?: string;
 
   @Prop({ default: "/assets/img/default-avatar.png" })

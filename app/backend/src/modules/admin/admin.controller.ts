@@ -131,6 +131,16 @@ export class AdminController {
     return this.adminService.getAllStaff();
   }
 
+  @Post("staff")
+  async createStaff(@Body() body: { name: string; email: string; password?: string }) {
+    return this.adminService.createStaff(body);
+  }
+
+  @Post("staff-login")
+  async staffLogin(@Body() body: { email: string; password?: string }) {
+    return this.adminService.staffLogin(body);
+  }
+
   @Get("premium-packages")
   async getPremiumPackages() {
     return this.paymentsService.getPremiumPackages();

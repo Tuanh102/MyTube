@@ -38,6 +38,8 @@ export default function VideoCard({ video }: VideoCardProps) {
   const { data: session } = useSession();
   const { setIsLoginDropdownOpen } = useUI();
 
+  const isFree = video.is_free !== false && String(video.is_free) !== 'false' && (!video.price || Number(video.price) === 0);
+
   // States and refs for 3-dot dropdown and reporting video
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -130,7 +132,7 @@ export default function VideoCard({ video }: VideoCardProps) {
           setIsLoginDropdownOpen(true); // Mở popover đăng nhập ở Header
           window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn mượt mà lên đầu trang
         }
-      } else if (video.is_free === false) {
+      } else if (!isFree) {
         e.preventDefault(); // Chặn chuyển hướng của Link
         const confirmLogin = window.confirm("Đây là video trả phí cao cấp. Bạn cần đăng nhập tài khoản để tiến hành mua bản quyền và thưởng thức video này. Click OK để đăng nhập ngay!");
         if (confirmLogin) {
@@ -174,7 +176,7 @@ export default function VideoCard({ video }: VideoCardProps) {
             }}
           />
           
-          {showVideo && video.video_url && !video.isLive && (video.is_free !== false || hasPermission) && (
+          {showVideo && video.video_url && !video.isLive && (isFree || hasPermission) && (
             <video
               ref={videoRef}
               src={getUploadUrl(video.video_url)}
@@ -196,7 +198,7 @@ export default function VideoCard({ video }: VideoCardProps) {
             </div>
           )}
 
-          {video.is_free === false && !video.isLive && !hasPermission && (
+          {!isFree && !video.isLive && !hasPermission && (
             <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black z-10 shadow-lg flex items-center gap-1 animate-pulse">
               <div className="w-1.5 h-1.5 bg-white rounded-full" />
               TRẢ PHÍ

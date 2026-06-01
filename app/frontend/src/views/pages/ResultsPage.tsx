@@ -8,9 +8,10 @@ import { useUI } from '@/context/UIContext';
 interface ResultsPageProps {
   videos: any[];
   query: string;
+  suggestedVideos?: any[];
 }
 
-export default function ResultsPage({ videos, query }: ResultsPageProps) {
+export default function ResultsPage({ videos, query, suggestedVideos = [] }: ResultsPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -20,15 +21,31 @@ export default function ResultsPage({ videos, query }: ResultsPageProps) {
       </h2>
 
       <div className="flex flex-col gap-4">
-        {videos.length > 0 ? videos.map((video) => (
-          <VideoResultCard key={video.video_id} video={video} />
-        )) : (
-          <div className="text-white/40 text-center py-20">
-            <p className="text-xl font-bold mb-2">Không tìm thấy kết quả nào</p>
-            <p>Hãy thử tìm kiếm với từ khóa khác</p>
+        {videos.length > 0 ? (
+          videos.map((video) => (
+            <VideoResultCard key={video.video_id} video={video} />
+          ))
+        ) : (
+          <div className="text-white/40 text-center py-12 bg-white/[0.02] border border-white/5 rounded-3xl p-8 mb-8 animate-in fade-in duration-500">
+            <p className="text-xl font-bold mb-2 text-white">Không tìm thấy kết quả nào</p>
+            <p className="text-sm">Rất tiếc, không tìm thấy video phù hợp với từ khóa của bạn. Hãy thử tìm kiếm bằng từ khóa khác!</p>
           </div>
         )}
       </div>
+
+      {videos.length === 0 && suggestedVideos.length > 0 && (
+        <div className="mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <h3 className="text-white text-lg font-bold mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-[#FF0000] rounded-full"></span>
+            Gợi ý các video phổ biến nhất dành cho bạn
+          </h3>
+          <div className="flex flex-col gap-4">
+            {suggestedVideos.map((video) => (
+              <VideoResultCard key={video.video_id} video={video} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

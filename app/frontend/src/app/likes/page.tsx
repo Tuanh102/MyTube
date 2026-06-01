@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import LikesPage from "@/views/pages/LikesPage";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/options";

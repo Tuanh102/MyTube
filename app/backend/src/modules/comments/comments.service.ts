@@ -37,7 +37,10 @@ export class CommentsService {
       throw new NotFoundException("Không tìm thấy video");
     }
 
-    const isPaid = video.is_free === false || (video.price && video.price > 0);
+    const isPaid =
+      video.is_free === false ||
+      String(video.is_free) === "false" ||
+      (video.price && Number(video.price) > 0);
     if (isPaid) {
       // Creator/owner of the video is always allowed to comment
       const isOwner =
@@ -161,8 +164,33 @@ export class CommentsService {
   }
 
   async getStudioComments(userId: string, videoId?: string) {
-    const query: any = {};
-    if (videoId && videoId !== "all") {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
+
+    // 1. Lấy danh sách kênh của người dùng
+    const userChannels = await this.commentModel.db
+      .model("Channel")
+      .find({ user: userId })
+      .exec();
+    const channelIds = userChannels.map((c) => c._id);
+
+    if (channelIds.length === 0) {
+      return [];
+    }
+
+    // 2. Lấy danh sách video thuộc các kênh của người dùng
+    const userVideos = await this.videoModel
+      .find({ channel: { $in: channelIds } })
+      .exec();
+    const videoIds = userVideos.map((v) => v._id);
+
+    if (videoIds.length === 0) {
+      return [];
+    }
+
+    const query: any = { video: { $in: videoIds } };
+    if (videoId && videoId !== "all" && Types.ObjectId.isValid(videoId)) {
       query.video = new Types.ObjectId(videoId);
     }
 

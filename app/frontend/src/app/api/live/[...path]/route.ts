@@ -1,10 +1,12 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 
 export async function GET(
     request: Request,
-    { params }: { params: { path: string[] } }
+    { params }: { params: Promise<{ path: string[] }> }
 ) {
-    const subpath = params.path.join('/');
+    const resolvedParams = await params;
+    const subpath = resolvedParams.path.join('/');
     const { search } = new URL(request.url);
     const targetUrl = `http://127.0.0.1:5000/live/${subpath}${search}`;
 
@@ -21,9 +23,10 @@ export async function GET(
 
 export async function POST(
     request: Request,
-    { params }: { params: { path: string[] } }
+    { params }: { params: Promise<{ path: string[] }> }
 ) {
-    const subpath = params.path.join('/');
+    const resolvedParams = await params;
+    const subpath = resolvedParams.path.join('/');
     const targetUrl = `http://127.0.0.1:5000/live/${subpath}`;
 
     try {

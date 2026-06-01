@@ -1,7 +1,9 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const pathStr = params.path.join('/');
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  const pathStr = resolvedParams.path.join('/');
   const searchParams = req.nextUrl.searchParams.toString();
   
   let targetPath = pathStr;
@@ -20,8 +22,9 @@ export async function GET(req: NextRequest, { params }: { params: { path: string
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const pathStr = params.path.join('/');
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  const pathStr = resolvedParams.path.join('/');
   let targetPath = pathStr;
   if (pathStr.startsWith('admin/') || pathStr.startsWith('support/')) {
     targetPath = `api/${pathStr}`;
@@ -43,8 +46,9 @@ export async function POST(req: NextRequest, { params }: { params: { path: strin
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const pathStr = params.path.join('/');
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  const pathStr = resolvedParams.path.join('/');
   let targetPath = pathStr;
   if (pathStr.startsWith('admin/') || pathStr.startsWith('support/')) {
     targetPath = `api/${pathStr}`;
@@ -61,8 +65,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { path: str
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const pathStr = params.path.join('/');
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  const pathStr = resolvedParams.path.join('/');
   let targetPath = pathStr;
   if (pathStr.startsWith('admin/') || pathStr.startsWith('support/')) {
     targetPath = `api/${pathStr}`;

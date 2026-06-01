@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import NotificationsPage from "@/views/pages/NotificationsPage";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";

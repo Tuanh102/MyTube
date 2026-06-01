@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../auth/[...nextauth]/options";
@@ -22,7 +23,11 @@ export async function GET(
             return NextResponse.json({ error: "Failed to fetch wallet balance" }, { status: res.status });
         }
         const data = await res.json();
-        return NextResponse.json(data);
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0, must-revalidate'
+            }
+        });
     } catch (err: any) {
         console.error(`Error fetching wallet balance for ${userId} in proxy:`, err);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

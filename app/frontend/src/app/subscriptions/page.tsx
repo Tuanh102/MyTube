@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import SubscriptionsPage from "@/views/pages/SubscriptionsPage";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";

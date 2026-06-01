@@ -30,6 +30,26 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
   const [duration, setDuration] = useState(0);
   const [isFree, setIsFree] = useState(true);
   const [price, setPrice] = useState(0);
+  const [fingerprint, setFingerprint] = useState('');
+
+  const calculateFingerprint = async (file: File): Promise<string> => {
+    try {
+      // Đọc tối đa 10MB đầu tiên của video để băm (tối ưu hóa tốc độ băm cực nhanh)
+      const sliceSize = 10 * 1024 * 1024;
+      const slice = file.slice(0, Math.min(file.size, sliceSize));
+      const arrayBuffer = await slice.arrayBuffer();
+      
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Kết hợp mã băm với kích thước file để tạo dấu vân tay duy nhất
+      return `${hashHex}_${file.size}`;
+    } catch (err) {
+      console.error('Lỗi khi băm video:', err);
+      return `${file.name}_${file.size}_${file.lastModified}`;
+    }
+  };
 
   const getVideoMetadata = (file: File, seekTime: number = 1): Promise<{ thumbnail: File, duration: number }> => {
     return new Promise((resolve, reject) => {
@@ -70,6 +90,7 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
   const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setVideoFile(file);
+    setFingerprint('');
     if (file) {
       setIsGeneratingThumbnail(true);
       try {
@@ -79,6 +100,10 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
         if (!thumbnailFile) {
           setPreviewUrl(URL.createObjectURL(thumbnail));
         }
+
+        // Băm video lấy dấu vân tay
+        const fp = await calculateFingerprint(file);
+        setFingerprint(fp);
       } catch (err) {
         console.error('Lỗi khi lấy metadata video:', err);
       } finally {
@@ -197,7 +222,31 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
     setProgress(0);
 
     try {
-      // 1. Helper function to upload directly to Cloudinary with real progress
+      // Đảm bảo dấu vân tay đã được tạo trước khi bắt đầu
+      let activeFingerprint = fingerprint;
+      if (!activeFingerprint) {
+        activeFingerprint = await calculateFingerprint(videoFile);
+        setFingerprint(activeFingerprint);
+      }
+
+      // 1. Kiểm tra bản quyền trước khi upload lên Cloudinary (Vân tay + AI)
+      const checkRes = await fetch('/api/videos/check-copyright', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fingerprint: activeFingerprint,
+          title,
+          description,
+          channelId
+        })
+      });
+
+      const checkData = await checkRes.json();
+      if (!checkRes.ok) {
+        throw new Error(checkData.error || 'Video bị trùng bản quyền hoặc vi phạm chính sách của hệ thống!');
+      }
+
+      // 2. Helper function to upload directly to Cloudinary with real progress
       const uploadDirectToCloudinary = async (file: File, resourceType: 'video' | 'image'): Promise<{url: string, public_id: string}> => {
         // A. Get signature from our server
         const timestamp = Math.round(new Date().getTime() / 1000);
@@ -248,17 +297,17 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
         });
       };
 
-      // 2. Upload video
+      // 3. Upload video
       const videoResult = await uploadDirectToCloudinary(videoFile, 'video');
 
-      // 3. Upload thumbnail (if any)
+      // 4. Upload thumbnail (if any)
       let thumbnailResult = { url: '', public_id: '' };
       const finalThumbnail = thumbnailFile || autoThumbnail;
       if (finalThumbnail) {
         thumbnailResult = await uploadDirectToCloudinary(finalThumbnail, 'image');
       }
 
-      // 4. Save metadata to our DB
+      // 5. Save video metadata to our DB
       const saveFormData = new FormData();
       saveFormData.append('title', title);
       saveFormData.append('description', description);
@@ -271,6 +320,7 @@ export default function UploadVideoModal({ isOpen, onClose, channels }: UploadVi
       saveFormData.append('duration', duration.toString());
       saveFormData.append('is_free', isFree.toString());
       saveFormData.append('price', price.toString());
+      saveFormData.append('fingerprint', activeFingerprint);
 
       const response = await fetch('/api/videos/upload', {
         method: 'POST',
