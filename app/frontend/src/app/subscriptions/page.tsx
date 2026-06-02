@@ -16,7 +16,23 @@ export default async function Page() {
     redirect('/login');
   }
 
-  const channels = [] as any[];
+  let channels = [] as any[];
+  try {
+    const res = await fetch(`http://127.0.0.1:5000/channels/subscribed?userId=${user.id}`, {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const rawChannels = await res.json();
+      channels = (rawChannels || []).map((c: any) => ({
+        channel_id: c._id,
+        channel_name: c.channel_name,
+        avatar: c.avatar_url || '/assets/img/default-channel-avatar.jpg',
+        sub_count: c.subscribers?.length || 0
+      }));
+    }
+  } catch (err) {
+    console.error("Error fetching subscribed channels:", err);
+  }
 
   return <SubscriptionsPage channels={channels} />;
 }

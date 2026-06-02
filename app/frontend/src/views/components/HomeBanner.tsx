@@ -45,7 +45,7 @@ export default function HomeBanner() {
           const fetchedAds: AdItem[] = data.ads || [];
           
           const activeMains = fetchedAds.filter(ad => ad.slotId.startsWith('homepage_main') && ad.isActive);
-          const activeSubs = fetchedAds.filter(ad => ad.slotId.startsWith('homepage_sub') && ad.isActive);
+          const activeSubs = fetchedAds.filter(ad => ad.slotId.startsWith('suggested_sidebar') && ad.isActive);
           
           // Shuffling active ads to rotate dynamically
           const shuffle = (array: AdItem[]) => {
@@ -123,9 +123,9 @@ export default function HomeBanner() {
   // If loading, show placeholder/skeleton (using premium layout aesthetics)
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px] animate-pulse">
-        <div className="md:col-span-8 h-[180px] md:h-full rounded-2xl bg-zinc-800/50" />
-        <div className="md:col-span-4 flex flex-col gap-3 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-10 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px] animate-pulse">
+        <div className="md:col-span-7 h-[180px] md:h-full rounded-2xl bg-zinc-800/50" />
+        <div className="md:col-span-3 flex flex-col gap-3 h-full">
           <div className="flex-1 rounded-2xl bg-zinc-800/30" />
           <div className="flex-1 rounded-2xl bg-zinc-800/30" />
         </div>
@@ -196,11 +196,11 @@ export default function HomeBanner() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px] dark-keep">
+    <div className="grid grid-cols-1 md:grid-cols-10 gap-4 w-full mb-6 md:h-[260px] lg:h-[300px] dark-keep">
       {/* 1. Main Banner Carousel */}
       {showMain && (
         <div className={`relative h-[180px] md:h-full rounded-2xl overflow-hidden group shadow-lg border border-white/5 ${
-          showSub ? 'md:col-span-8' : 'md:col-span-12'
+          showSub ? 'md:col-span-7' : 'md:col-span-10'
         }`}>
           {mainBanners.map((banner, index) => {
             const isCurrent = index === currentIndex;
@@ -290,8 +290,8 @@ export default function HomeBanner() {
       {showSub && (
         <div className={`flex gap-3 h-full ${
           showMain 
-            ? 'md:col-span-4 flex-col sm:flex-row md:flex-col' 
-            : 'md:col-span-12 grid grid-cols-1 md:grid-cols-2 w-full'
+            ? 'md:col-span-3 flex-col sm:flex-row md:flex-col' 
+            : 'md:col-span-10 grid grid-cols-1 md:grid-cols-2 w-full'
         }`}>
           {/* Sub Banner 1 */}
           {showSub1 && subAd1 && (
@@ -308,6 +308,16 @@ export default function HomeBanner() {
             >
               {renderAdCardContents(subAd1)}
             </a>
+          )}
+
+          {/* Placeholder at bottom if only ad 1 is present */}
+          {showMain && showSub1 && !showSub2 && (
+            <div className="flex-1 hidden md:block pointer-events-none" />
+          )}
+
+          {/* Placeholder at top if only ad 2 is present */}
+          {showMain && !showSub1 && showSub2 && (
+            <div className="flex-1 hidden md:block pointer-events-none" />
           )}
 
           {/* Sub Banner 2 */}

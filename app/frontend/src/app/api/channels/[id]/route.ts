@@ -27,7 +27,7 @@ export async function PATCH(
         if (name) updateData.channel_name = name;
         if (description) updateData.description = description;
 
-        const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
+        const uploadDir = path.join(process.cwd(), '..', 'backend', 'uploads');
         await mkdir(uploadDir, { recursive: true });
 
         if (avatarFile && avatarFile.size > 0) {

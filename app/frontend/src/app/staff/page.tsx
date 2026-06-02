@@ -59,7 +59,7 @@ export default function StaffPage() {
 
     const [staff, setStaff] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('overview');
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<any>({
         totalUsers: 0,
         totalVideos: 0,
         pendingVideos: 0,
@@ -192,12 +192,43 @@ export default function StaffPage() {
                 setStats(prev => ({
                     ...prev,
                     totalUsers: data.totalUsers,
-                    totalVideos: data.totalVideos
+                    totalVideos: data.totalVideos,
+                    staffStats: data.staffStats,
+                    avgModerationTime: data.avgModerationTime,
+                    ticketResolutionRate: data.ticketResolutionRate,
+                    fingerprintCount: data.fingerprintCount
                 }));
             }
         } catch (error) {
             console.error('Lỗi lấy thống kê staff:', error);
         }
+    };
+
+    const getPast7Days = () => {
+        const dates = [];
+        const daysOfWeek = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(today.getDate() - i);
+            const dateStr = d.toLocaleDateString('vi-VN', { month: 'numeric', day: 'numeric' });
+            const dayName = i === 0 ? 'Hôm nay' : daysOfWeek[d.getDay()];
+            dates.push({ label: `${dayName} (${dateStr})`, shortLabel: i === 0 ? 'Hôm nay' : dayName });
+        }
+        return dates;
+    };
+
+    const getStaffChartData = () => {
+        const days = getPast7Days();
+        const approved = stats.staffStats?.approved || [0, 0, 0, 0, 0, 0, 0];
+        const rejected = stats.staffStats?.rejected || [0, 0, 0, 0, 0, 0, 0];
+        
+        return days.map((day, idx) => ({
+            day: day.shortLabel,
+            fullLabel: day.label,
+            approved: approved[idx] || 0,
+            rejected: rejected[idx] || 0
+        }));
     };
 
     const fetchPendingVideos = async () => {
@@ -536,19 +567,13 @@ export default function StaffPage() {
             {/* Main Area */}
             <main className="flex-1 flex flex-col h-screen overflow-hidden bg-transparent">
                 <header className="relative z-50 h-20 border-b border-rose-100 dark:border-white/5 flex items-center justify-between px-10 bg-white/40 dark:bg-black/20 backdrop-blur-md">
-                    {/* Search Form */}
-                    <form
-                        onSubmit={(e) => { e.preventDefault(); const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement)?.value?.trim(); if (q) router.push(`/staff/search?q=${encodeURIComponent(q)}`); }}
-                        className="flex items-center gap-3 bg-white/80 dark:bg-white/[0.02] px-4 py-2 rounded-lg border border-rose-200 dark:border-white/5 w-[300px] hover:border-red-500/30 transition-all"
-                    >
-                        <button type="submit" className="text-zinc-400 dark:text-white/20 hover:text-red-500 transition-colors flex-shrink-0"><Search size={16} /></button>
-                        <input
-                            name="q"
-                            type="text"
-                            placeholder="Tìm kiếm thông minh bằng AI..."
-                            className="bg-transparent text-xs text-zinc-500 dark:text-white/30 placeholder:text-zinc-400 dark:placeholder:text-white/30 outline-none w-full"
-                        />
-                    </form>
+                    <div className="flex items-center gap-3.5 bg-rose-50/50 dark:bg-white/[0.02] border border-rose-150 dark:border-white/5 px-4 py-2 rounded-2xl shadow-sm">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                        </span>
+                        <span className="text-xs font-bold text-zinc-850 dark:text-white uppercase tracking-wider">Bảng điều khiển Staff • Ổn định</span>
+                    </div>
                     
                     <div className="flex items-center gap-6">
                         {/* Theme dropdown */}
@@ -644,6 +669,104 @@ export default function StaffPage() {
                                         <div>
                                             <h3 className="text-2xl font-bold tabular-nums text-amber-500">{stats.pendingVideos}</h3>
                                             <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest">Video chờ duyệt</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+{/* Grid of Chart & Performance metrics for Staff Dashboard */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500 delay-100">
+                                {/* Moderation Activity Chart */}
+                                <div className="lg:col-span-2 bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-8 flex flex-col min-h-[360px] shadow-sm backdrop-blur-md">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Hiệu suất kiểm duyệt hệ thống</h4>
+                                            <p className="text-[11px] text-zinc-400 dark:text-white/20 mt-1">Khối lượng nội dung được điều hành xử lý trong 7 ngày qua.</p>
+                                        </div>
+                                        <div className="flex gap-2 bg-rose-50/50 dark:bg-white/[0.02] p-1 rounded-xl border border-rose-100 dark:border-white/5">
+                                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Phê duyệt</span>
+                                            <span className="text-[10px] font-bold text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">Từ chối</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 flex items-end gap-4 px-2 min-h-[180px]">
+                                        {getStaffChartData().map((item, i) => {
+
+
+
+
+
+
+
+
+                                            const chartItems = getStaffChartData();
+                                            const maxVal = Math.max(...chartItems.map(item => Math.max(item.approved, item.rejected, 1)), 5);
+                                            const approvedHeight = (item.approved / maxVal) * 100;
+                                            const rejectedHeight = (item.rejected / maxVal) * 100;
+                                            return (
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end group">
+                                                    <div className="w-full flex gap-1.5 h-[160px] items-end justify-center">
+                                                        {/* Approved Bar */}
+                                                        <div 
+                                                            className="w-1/2 bg-emerald-500/20 hover:bg-gradient-to-t hover:from-emerald-600 hover:to-teal-400 transition-all duration-300 rounded-t-md relative flex justify-center group/bar"
+                                                            style={{ height: `${approvedHeight}%` }}
+                                                        >
+                                                            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-zinc-900/90 text-white text-[9px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity font-mono z-30 shadow-xl pointer-events-none whitespace-nowrap">
+                                                                {item.approved} duyệt
+                                                            </div>
+                                                        </div>
+                                                        {/* Rejected Bar */}
+                                                        <div 
+                                                            className="w-1/2 bg-red-500/20 hover:bg-gradient-to-t hover:from-red-600 hover:to-orange-500 transition-all duration-300 rounded-t-md relative flex justify-center group/bar2"
+                                                            style={{ height: `${rejectedHeight}%` }}
+                                                        >
+                                                            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-zinc-900/90 text-white text-[9px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover/bar2:opacity-100 transition-opacity font-mono z-30 shadow-xl pointer-events-none whitespace-nowrap">
+                                                                {item.rejected} từ chối
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] text-zinc-400 dark:text-white/20 font-mono whitespace-nowrap">{item.day}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* System health and Operating Metrics */}
+                                <div className="lg:col-span-1 bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-8 flex flex-col min-h-[360px] shadow-sm backdrop-blur-md">
+                                    <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white mb-6">Chỉ số vận hành</h4>
+                                    
+                                    <div className="space-y-6 flex-1 flex flex-col justify-center">
+                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
+                                            <div>
+                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">Thời gian phản hồi</p>
+                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Thời gian duyệt video trung bình</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-sm font-black text-red-500 font-mono">{stats.avgModerationTime ? (stats.avgModerationTime < 60000 ? `${Math.round(stats.avgModerationTime / 1000)} giây` : `~${Math.round(stats.avgModerationTime / 60000)} phút`) : 'N/A'}</span>
+                                                <span className="block text-[8px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Tối ưu</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
+                                            <div>
+                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">Tỷ lệ đóng ticket</p>
+                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Yêu cầu hỗ trợ đã giải quyết</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-sm font-black text-amber-500 font-mono">{stats.ticketResolutionRate !== undefined ? `${stats.ticketResolutionRate}%` : '100%'}</span>
+                                                <span className="block text-[8px] font-black text-zinc-400 bg-zinc-500/10 px-1.5 py-0.5 rounded border border-zinc-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Tuần này</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
+                                            <div>
+                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">AI kiểm duyệt trước</p>
+                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Tự động đối chiếu mã băm video</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-sm font-black text-emerald-500 font-mono">Đang bảo vệ (${stats.fingerprintCount || 0} video)</span>
+                                                <span className="block text-[8px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Bảo vệ 24/7</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

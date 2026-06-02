@@ -40,6 +40,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
+        console.log("Next.js POST /api/ads payload body:", body);
         const url = (body.globalAdEnabled !== undefined)
             ? "http://127.0.0.1:5000/api/ads/settings"
             : "http://127.0.0.1:5000/api/ads";
@@ -53,13 +54,18 @@ export async function POST(req: Request) {
         });
 
         if (!res.ok) {
-            return NextResponse.json({ error: "Failed to perform POST action in backend" }, { status: res.status });
+            let errorMsg = "Failed to perform POST action in backend";
+            try {
+                const errJson = await res.json();
+                errorMsg = errJson.message || errJson.error || errorMsg;
+            } catch (e) {}
+            return NextResponse.json({ error: errorMsg }, { status: res.status });
         }
 
         const data = await res.json();
         return NextResponse.json(data);
     } catch (err: any) {
         console.error("Error performing POST ad in frontend API:", err);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: `Internal Server Error: ${err.message || err}` }, { status: 500 });
     }
 }

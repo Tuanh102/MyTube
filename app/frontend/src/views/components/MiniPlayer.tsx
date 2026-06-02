@@ -6,6 +6,25 @@ import { useUI } from '@/context/UIContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { getUploadUrl } from '@/lib/utils';
 
+const getPrerollEmbedUrl = (url: string) => {
+  if (!url) return '';
+  if (url.includes('youtube.com/embed/')) return url;
+  let videoId = '';
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
+  if (match && match[1]) {
+    videoId = match[1];
+  }
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&showinfo=0`;
+  }
+  return url;
+};
+
+const isYouTubeAd = (url?: string) => {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
 export default function MiniPlayer() {
   const { 
     activeVideo, 
@@ -17,7 +36,11 @@ export default function MiniPlayer() {
     setIsMiniPlayerActive,
     isAdActive,
     setIsAdActive,
-    adCountdownGlobal
+    adCountdownGlobal,
+    adMediaUrlGlobal,
+    adLinkUrlGlobal,
+    adTitleGlobal,
+    adBadgeTextGlobal
   } = useUI();
   const router = useRouter();
   const pathname = usePathname();
@@ -216,27 +239,37 @@ export default function MiniPlayer() {
         </div>
       )}
 
-      {/* LỚP PHỦ QUẢNG CÁO PRE-ROLL XANH SM TRÊN MINI PLAYER */}
-      {isAdActive && (
+      {/* LỚP PHỦ QUẢNG CÁO PRE-ROLL TRÊN MINI PLAYER */}
+      {isAdActive && adMediaUrlGlobal && (
         <div className="absolute inset-0 z-35 bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300 dark-keep pointer-events-none">
-          <iframe 
-            src="https://www.youtube.com/embed/ZPcCfW4JNO0?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&showinfo=0"
-            className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none"
-            allow="autoplay; encrypted-media"
-            title="Xanh SM Pre-roll Ad"
-          />
+          {isYouTubeAd(adMediaUrlGlobal) ? (
+            <iframe 
+              src={getPrerollEmbedUrl(adMediaUrlGlobal)}
+              className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none"
+              allow="autoplay; encrypted-media"
+              title="Mini-player Pre-roll Ad"
+            />
+          ) : (
+            <video
+              src={getUploadUrl(adMediaUrlGlobal)}
+              className="absolute w-full h-full object-cover pointer-events-none"
+              autoPlay
+              playsInline
+              muted
+            />
+          )}
 
-          {/* Nhãn hiệu "Ad Xanh SM" góc trên bên trái - chuyển thành link click trực tiếp */}
+          {/* Nhãn hiệu quảng cáo góc trên bên trái - chuyển thành link click trực tiếp */}
           <a 
-            href="https://www.xanhsm.com/"
+            href={adLinkUrlGlobal || "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 flex items-center gap-1.5 z-45 hover:bg-black/85 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer pointer-events-auto"
           >
             <span className="bg-white text-zinc-950 font-extrabold text-[8px] px-1 py-0.5 rounded uppercase tracking-wider">
-              Ad
+              {adBadgeTextGlobal || 'Ad'}
             </span>
-            <span className="text-white font-bold text-[10px] hover:underline">Xanh SM</span>
+            <span className="text-white font-bold text-[10px] hover:underline">{adTitleGlobal || 'Quảng cáo'}</span>
           </a>
 
           {/* Bộ điều khiển Phóng to & Đóng ở góc trên bên phải của quảng cáo */}

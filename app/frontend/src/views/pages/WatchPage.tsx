@@ -32,7 +32,11 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     adTotalCountdownGlobal,
     setAdTotalCountdownGlobal,
     isAdPausedGlobal,
-    setIsAdPausedGlobal
+    setIsAdPausedGlobal,
+    setAdMediaUrlGlobal,
+    setAdLinkUrlGlobal,
+    setAdTitleGlobal,
+    setAdBadgeTextGlobal
   } = useUI();
 
   // Hàm kiểm tra và cảnh báo Guest đăng nhập
@@ -349,6 +353,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
 
   useEffect(() => {
     async function loadAds() {
+      setPrerollAdData(null);
       try {
         const res = await fetch('/api/ads?mode=public');
         if (res.ok) {
@@ -363,11 +368,14 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
             const selectedPreroll = activePrerolls[randomIndex];
             setPrerollAdData(selectedPreroll);
           } else {
+            setPrerollAdData(null);
             setLocalShowAd(false);
           }
 
           // Sidebar banners carousel
-          const sidebarAds = data.ads?.filter((ad: any) => ad.slotId.startsWith('suggested_sidebar') && ad.isActive) || [];
+          const sidebarAds = globalEnabled
+            ? (data.ads?.filter((ad: any) => ad.slotId.startsWith('suggested_sidebar') && ad.isActive) || [])
+            : [];
           
           // Rotate suggested sidebar ads dynamically by shuffling
           const shuffledSidebar = [...sidebarAds].sort(() => Math.random() - 0.5);
@@ -430,11 +438,27 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
     prevIsAdActiveRef.current = isAdActive;
   }, [isAdActive]);
 
+  // Đồng bộ thông tin chi tiết quảng cáo lên UIContext toàn cục để MiniPlayer sử dụng
+  useEffect(() => {
+    if (prerollAdData) {
+      setAdMediaUrlGlobal(prerollAdData.mediaUrl || null);
+      setAdLinkUrlGlobal(prerollAdData.linkUrl || null);
+      setAdTitleGlobal(prerollAdData.title || null);
+      setAdBadgeTextGlobal(prerollAdData.badgeText || null);
+    } else {
+      setAdMediaUrlGlobal(null);
+      setAdLinkUrlGlobal(null);
+      setAdTitleGlobal(null);
+      setAdBadgeTextGlobal(null);
+    }
+  }, [prerollAdData, setAdMediaUrlGlobal, setAdLinkUrlGlobal, setAdTitleGlobal, setAdBadgeTextGlobal]);
+
   const adIframeRef = useRef<HTMLIFrameElement>(null);
 
   // Điều khiển Tạm dừng / Tiếp tục phát video quảng cáo YouTube nhúng hoặc video tự upload
   const toggleAdPlayPause = () => {
-    const mediaUrl = prerollAdData?.mediaUrl || "https://www.youtube.com/embed/ZPcCfW4JNO0";
+    const mediaUrl = prerollAdData?.mediaUrl;
+    if (!mediaUrl) return;
     const isYT = isYouTubeAd(mediaUrl);
 
     if (isYT) {
@@ -946,12 +970,12 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
           </video>
 
           {/* LỚP PHỦ QUẢNG CÁO PRE-ROLL DÂN CƠ CHẾ VẬN HÀNH */}
-          {isPurchased && showAd && (
+          {isPurchased && showAd && prerollAdData && (
             <div className="absolute inset-0 z-30 bg-black flex items-center justify-center overflow-hidden animate-in fade-in duration-300 dark-keep">
-              {isYouTubeAd(prerollAdData?.mediaUrl || "https://www.youtube.com/embed/ZPcCfW4JNO0") ? (
+              {isYouTubeAd(prerollAdData.mediaUrl) ? (
                 <iframe 
                   ref={adIframeRef}
-                  src={getPrerollEmbedUrl(prerollAdData?.mediaUrl || "https://www.youtube.com/embed/ZPcCfW4JNO0")}
+                  src={getPrerollEmbedUrl(prerollAdData.mediaUrl)}
                   className="absolute w-[116%] h-[116%] -top-[8%] -left-[8%] pointer-events-none"
                   allow="autoplay; encrypted-media"
                   title="YouTube Pre-roll Ad"
@@ -959,7 +983,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
               ) : (
                 <video
                   ref={localAdVideoRef}
-                  src={getUploadUrl(prerollAdData?.mediaUrl)}
+                  src={getUploadUrl(prerollAdData.mediaUrl)}
                   className="absolute w-full h-full object-cover pointer-events-none"
                   autoPlay
                   playsInline
@@ -982,9 +1006,9 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
               
               {/* Nhãn hiệu "Quảng cáo" (Ad label) ở góc trên bên trái */}
               <a 
-                href={prerollAdData?.linkUrl || "https://www.xanhsm.com/"}
+                href={prerollAdData.linkUrl || "#"}
                 onClick={() => {
-                  if (prerollAdData?.slotId) {
+                  if (prerollAdData.slotId) {
                     trackAdEvent(prerollAdData.slotId, 'click');
                   }
                 }}
@@ -993,9 +1017,9 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
                 className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 z-40 hover:bg-black/85 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
               >
                 <span className="bg-white text-zinc-950 font-extrabold text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider">
-                  {prerollAdData?.badgeText || 'Ad'}
+                  {prerollAdData.badgeText || 'Ad'}
                 </span>
-                <span className="text-white font-bold text-xs hover:underline">{prerollAdData?.title || 'Quảng cáo tài trợ'}</span>
+                <span className="text-white font-bold text-xs hover:underline">{prerollAdData.title || 'Quảng cáo'}</span>
               </a>
 
               {/* Nút đếm ngược / Bỏ qua quảng cáo ở góc dưới bên phải */}
@@ -1484,7 +1508,7 @@ export default function WatchPage({ video, relatedVideos, comments = [], user }:
       {/* Cột phụ: Video gợi ý */}
       <aside className="xl:w-[400px] flex-shrink-0 space-y-6">
         {/* Banner Carousel Frame */}
-        {watchBanners && watchBanners.length > 0 && (
+        {globalAdEnabled && watchBanners && watchBanners.length > 0 && (
           <div className="relative aspect-[2/1] rounded-xl overflow-hidden border border-white/10 shadow-2xl group bg-black/20 dark-keep">
             {watchBanners.map((banner, idx) => {
               const isCurrent = idx === currentBanner;

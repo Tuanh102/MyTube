@@ -296,7 +296,51 @@ export class AdminService {
           chartData.traffic[i] = Math.floor(totalViews * trafficWeights[i]);
         }
         return chartData;
-      })()
+      })(),
+      staffStats: await (async () => {
+        const staffStats = {
+          approved: Array(7).fill(0),
+          rejected: Array(7).fill(0),
+        };
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+          const dayOffset = 6 - i;
+          const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOffset, 0, 0, 0, 0);
+          const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOffset, 23, 59, 59, 999);
+
+          staffStats.approved[i] = await this.videoModel.countDocuments({
+            status: "APPROVED",
+            updatedAt: { $gte: startOfDay, $lte: endOfDay }
+          });
+
+          staffStats.rejected[i] = await this.videoModel.countDocuments({
+            status: "REJECTED",
+            updatedAt: { $gte: startOfDay, $lte: endOfDay }
+          });
+        }
+        return staffStats;
+      })(),
+      avgModerationTime: await (async () => {
+        const videos = await this.videoModel.find({ status: { $in: ["APPROVED", "REJECTED"] } }).exec();
+        if (videos.length === 0) return 0;
+        let totalModTime = 0;
+        let count = 0;
+        for (const v of videos) {
+          const modTime = (v as any).updatedAt.getTime() - (v as any).createdAt.getTime();
+          if (modTime > 0) {
+            totalModTime += modTime;
+            count++;
+          }
+        }
+        return count > 0 ? Math.round(totalModTime / count) : 0;
+      })(),
+      ticketResolutionRate: await (async () => {
+        const totalTickets = await this.adminModel.db.collection('tickets').countDocuments();
+        if (totalTickets === 0) return 100; // default 100% if empty
+        const closedTickets = await this.adminModel.db.collection('tickets').countDocuments({ status: "CLOSED" });
+        return Math.round((closedTickets / totalTickets) * 1000) / 10;
+      })(),
+      fingerprintCount: await this.adminModel.db.collection('fingerprints').countDocuments()
     };
   }
 
@@ -660,6 +704,9 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
     if (!staff) {
       throw new HttpException("Tài khoản nhân viên không tồn tại", HttpStatus.UNAUTHORIZED);
     }
+    if (!staff.isActive) {
+      throw new HttpException("Tài khoản nhân viên đã bị khóa", HttpStatus.FORBIDDEN);
+    }
     if (body.password && staff.password !== body.password) {
       throw new HttpException("Mật khẩu không chính xác", HttpStatus.UNAUTHORIZED);
     }
@@ -667,5 +714,34 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
       admin: staff,
       message: "Staff login success",
     };
+  }
+
+  async deleteStaff(id: string) {
+    const staff = await this.adminModel.findOne({ _id: id, role: "STAFF" }).exec();
+    if (!staff) {
+      throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
+    }
+    await this.adminModel.deleteOne({ _id: id, role: "STAFF" }).exec();
+    return { success: true };
+  }
+
+  async lockStaff(id: string) {
+    const staff = await this.adminModel.findOne({ _id: id, role: "STAFF" }).exec();
+    if (!staff) {
+      throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
+    }
+    staff.isActive = false;
+    await staff.save();
+    return staff;
+  }
+
+  async unlockStaff(id: string) {
+    const staff = await this.adminModel.findOne({ _id: id, role: "STAFF" }).exec();
+    if (!staff) {
+      throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
+    }
+    staff.isActive = true;
+    await staff.save();
+    return staff;
   }
 }

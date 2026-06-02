@@ -47,7 +47,7 @@ export async function PATCH(
             const buffer = Buffer.from(bytes);
 
             const filename = `${Date.now()}-${thumbnailFile.name}`;
-            const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
+            const uploadDir = path.join(process.cwd(), '..', 'backend', 'uploads');
             await mkdir(uploadDir, { recursive: true });
             const filePath = path.join(uploadDir, filename);
             await writeFile(filePath, buffer);

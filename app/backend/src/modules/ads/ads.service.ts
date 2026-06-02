@@ -101,12 +101,10 @@ export class AdsService implements OnModuleInit {
 
     let query: any = {};
     if (mode === "public") {
-      // Only serve active, paid, and un-exhausted ads
+      // Only serve active ads
       query = {
         isActive: true,
-        paymentStatus: "APPROVED",
         status: "ACTIVE",
-        $expr: { $lt: ["$spent", "$totalBudget"] },
       };
     } else if (advertiserId) {
       query = { advertiserId };
@@ -138,7 +136,8 @@ export class AdsService implements OnModuleInit {
 
   // Get details of a single ad slot
   async getAdBySlot(slotId: string): Promise<Advertisement | null> {
-    return this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    return this.adModel.findOne(query).exec();
   }
 
   // Update an ad slot configuration
@@ -146,24 +145,28 @@ export class AdsService implements OnModuleInit {
     slotId: string,
     updateData: Partial<Advertisement>,
   ): Promise<Advertisement | null> {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) return null;
 
     // Check if activating this ad
     if (updateData.status === "ACTIVE" || updateData.isActive === true) {
       // 1. Enforce max 1 active ad per user
       if (ad.advertiserId) {
-        const activeAd = await this.adModel
-          .findOne({
-            advertiserId: ad.advertiserId,
-            status: "ACTIVE",
-            slotId: { $ne: slotId },
-          })
-          .exec();
-        if (activeAd) {
-          throw new BadRequestException(
-            "Bạn chỉ được chạy tối đa 1 quảng cáo tại cùng một thời điểm. Vui lòng dừng quảng cáo khác trước.",
-          );
+        const user = await this.userModel.findById(ad.advertiserId).exec();
+        if (user) {
+          const activeAd = await this.adModel
+            .findOne({
+              advertiserId: ad.advertiserId,
+              status: "ACTIVE",
+              slotId: { $ne: slotId },
+            })
+            .exec();
+          if (activeAd) {
+            throw new BadRequestException(
+              "Bạn chỉ được chạy tối đa 1 quảng cáo tại cùng một thời điểm. Vui lòng dừng quảng cáo khác trước.",
+            );
+          }
         }
       }
 
@@ -192,7 +195,7 @@ export class AdsService implements OnModuleInit {
     }
 
     return this.adModel
-      .findOneAndUpdate({ slotId }, { $set: updateData }, { new: true })
+      .findOneAndUpdate(query, { $set: updateData }, { new: true })
       .exec();
   }
 
@@ -216,7 +219,8 @@ export class AdsService implements OnModuleInit {
 
   // Delete an ad slot by slotId
   async deleteAd(slotId: string): Promise<any> {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) return { deletedCount: 0 };
 
     // 1. Hoàn trả số tiền dư chưa chạy hết của chiến dịch quảng cáo khi bị xóa
@@ -273,7 +277,7 @@ export class AdsService implements OnModuleInit {
         }
       }
     }
-    return this.adModel.deleteOne({ slotId }).exec();
+    return this.adModel.deleteOne(query).exec();
   }
 
   // Pay for an ad (Option 1: VietQR QR request, Option 2: Wallet Deduct)
@@ -283,7 +287,8 @@ export class AdsService implements OnModuleInit {
     userId: string,
     bankTransactionRef?: string,
   ) {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) {
       throw new NotFoundException("Không tìm thấy chiến dịch quảng cáo");
     }
@@ -350,7 +355,8 @@ export class AdsService implements OnModuleInit {
     slotId: string,
     paymentStatus: "APPROVED" | "REJECTED",
   ) {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) {
       throw new NotFoundException("Không tìm thấy quảng cáo");
     }
@@ -384,7 +390,8 @@ export class AdsService implements OnModuleInit {
     action: "approve" | "reject",
     rejectReason?: string,
   ) {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) {
       throw new NotFoundException("Không tìm thấy quảng cáo");
     }
@@ -443,32 +450,14 @@ export class AdsService implements OnModuleInit {
 
   // Track impressions and clicks
   async trackAd(slotId: string, type: "view" | "click") {
-    const ad = await this.adModel.findOne({ slotId }).exec();
+    const query = Types.ObjectId.isValid(slotId) ? { _id: new Types.ObjectId(slotId) } : { slotId };
+    const ad = await this.adModel.findOne(query).exec();
     if (!ad) return null;
-
-    // First sync spent for CPD ads to ensure correct budget exhaustion
-    if (ad.status === "ACTIVE" && ad.pricingModel === "CPD") {
-      await this.syncAdSpent(ad);
-    }
 
     if (type === "view") {
       ad.views += 1;
     } else if (type === "click") {
       ad.clicks += 1;
-    }
-
-    // Dynamic cost calculations based on pricing model
-    if (ad.pricingModel === "CPC" && type === "click") {
-      ad.spent += ad.pricePerUnit;
-    } else if (ad.pricingModel === "CPM" && type === "view") {
-      ad.spent += ad.pricePerUnit / 1000;
-    }
-
-    // Auto pause campaign if budget is exhausted (for CPC/CPM)
-    if (ad.spent >= ad.totalBudget) {
-      ad.isActive = false;
-      ad.status = "PAUSED_BUDGET_EXHAUSTED";
-      ad.lastActiveStartAt = undefined;
     }
 
     await ad.save();

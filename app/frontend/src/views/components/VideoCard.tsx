@@ -26,6 +26,7 @@ interface VideoCardProps {
     channel_user_id?: string | number;
     user_id?: string | number;
     isLive?: boolean;
+    price?: number;
   };
 }
 

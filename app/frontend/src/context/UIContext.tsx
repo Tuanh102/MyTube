@@ -35,6 +35,14 @@ interface UIContextType {
   setAdTotalCountdownGlobal: (seconds: number) => void;
   isAdPausedGlobal: boolean;
   setIsAdPausedGlobal: (paused: boolean) => void;
+  adMediaUrlGlobal: string | null;
+  setAdMediaUrlGlobal: (url: string | null) => void;
+  adLinkUrlGlobal: string | null;
+  setAdLinkUrlGlobal: (url: string | null) => void;
+  adTitleGlobal: string | null;
+  setAdTitleGlobal: (title: string | null) => void;
+  adBadgeTextGlobal: string | null;
+  setAdBadgeTextGlobal: (text: string | null) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -52,6 +60,10 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [adCountdownGlobal, setAdCountdownGlobal] = useState(5);
   const [adTotalCountdownGlobal, setAdTotalCountdownGlobal] = useState(30);
   const [isAdPausedGlobal, setIsAdPausedGlobal] = useState(false);
+  const [adMediaUrlGlobal, setAdMediaUrlGlobal] = useState<string | null>(null);
+  const [adLinkUrlGlobal, setAdLinkUrlGlobal] = useState<string | null>(null);
+  const [adTitleGlobal, setAdTitleGlobal] = useState<string | null>(null);
+  const [adBadgeTextGlobal, setAdBadgeTextGlobal] = useState<string | null>(null);
 
   // Global ticking for pre-roll ad
   useEffect(() => {
@@ -176,7 +188,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
       isAdActive, setIsAdActive,
       adCountdownGlobal, setAdCountdownGlobal,
       adTotalCountdownGlobal, setAdTotalCountdownGlobal,
-      isAdPausedGlobal, setIsAdPausedGlobal
+      isAdPausedGlobal, setIsAdPausedGlobal,
+      adMediaUrlGlobal, setAdMediaUrlGlobal,
+      adLinkUrlGlobal, setAdLinkUrlGlobal,
+      adTitleGlobal, setAdTitleGlobal,
+      adBadgeTextGlobal, setAdBadgeTextGlobal
     }}>
       {children}
     </UIContext.Provider>

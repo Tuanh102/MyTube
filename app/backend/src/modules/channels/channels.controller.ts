@@ -58,6 +58,14 @@ export class ChannelsController {
     return this.channelsService.findByUser(userId);
   }
 
+  @Get("subscribed")
+  async findSubscribedByUser(@Query("userId") userId: string) {
+    if (!userId || userId === "undefined" || userId === "null") {
+      return [];
+    }
+    return this.channelsService.findSubscribedByUser(userId);
+  }
+
   @Get(":id")
   async findById(@Param("id") id: string) {
     return this.channelsService.findById(id);

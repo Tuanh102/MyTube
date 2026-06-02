@@ -139,6 +139,13 @@ export class ChannelsService {
     return this.channelModel.find({ user: userId }).exec();
   }
 
+  async findSubscribedByUser(userId: string) {
+    if (!userId || userId === "undefined" || userId === "null" || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
+    return this.channelModel.find({ subscribers: new Types.ObjectId(userId) }).exec();
+  }
+
   async findById(id: string) {
     return this.channelModel.findById(id).exec();
   }

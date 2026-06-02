@@ -49,6 +49,22 @@ import { LayoutDashboard,
 import { useUI } from '@/context/UIContext';
 import ClockWidget from '@/components/ClockWidget';
 
+const getAdDisplayType = (slotId: string) => {
+    if (!slotId) return 'Không xác định';
+    if (slotId.startsWith('video_preroll')) return 'Pre-roll Video';
+    if (slotId.startsWith('suggested_sidebar')) return 'Sidebar liên kết';
+    if (slotId.startsWith('homepage_main') || slotId.startsWith('homepage_sub')) return 'Banner chính';
+    return slotId;
+};
+
+const isPendingAd = (ad: any) => {
+    return ad.paymentStatus === 'PENDING' || 
+           ad.paymentStatus === 'PENDING_PAYMENT' || 
+           ad.status === 'PENDING' || 
+           ad.status === 'PENDING_REVIEW' || 
+           ad.status === 'PENDING_PAYMENT';
+};
+
 export default function AdminPage() {
     const router = useRouter();
     const { theme, setTheme } = useUI();
@@ -129,14 +145,13 @@ export default function AdminPage() {
         costPerView: 500,
         totalBudget: 500000,
         ownerId: '',
-        status: 'APPROVED'
+        status: 'ACTIVE'
     });
 
     const [rejectAdReason, setRejectAdReason] = useState('');
     const [showRejectAdModal, setShowRejectAdModal] = useState(false);
     
-    // Core statistics state
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<any>({
         totalRevenue: 0,
         platformFee: 0,
         totalUsers: 0,
@@ -684,8 +699,9 @@ export default function AdminPage() {
         try {
             const res = await fetch('/api/ads');
             const data = await res.json();
-            if (res.ok && Array.isArray(data)) {
-                setAdsList(data);
+            if (res.ok) {
+                const ads = Array.isArray(data) ? data : (data.ads || []);
+                setAdsList(ads);
             }
         } catch (err) {
             console.error(err);
@@ -740,13 +756,50 @@ export default function AdminPage() {
         e.preventDefault();
         setIsAdSubmitting(true);
         try {
+            const mediaUrl = adForm.type === 'pre-roll' ? adForm.videoUrl : adForm.bannerUrl;
+            const linkUrl = adForm.clickUrl;
+
+            if (!mediaUrl || !mediaUrl.trim()) {
+                alert('Vui lòng nhập Đường dẫn Media (Video hoặc Banner)!');
+                setIsAdSubmitting(false);
+                return;
+            }
+            if (!linkUrl || !linkUrl.trim()) {
+                alert('Vui lòng nhập Đường dẫn click!');
+                setIsAdSubmitting(false);
+                return;
+            }
+
+            const payload: any = {
+                title: adForm.title,
+                mediaUrl: mediaUrl.trim(),
+                linkUrl: linkUrl.trim(),
+                status: adForm.status,
+                isActive: adForm.status === 'ACTIVE',
+                targetViews: adForm.targetViews,
+                costPerView: adForm.costPerView,
+                totalBudget: adForm.totalBudget,
+                advertiserId: adForm.ownerId || admin?._id || '',
+                advertiserName: 'Admin',
+                paymentStatus: 'APPROVED'
+            };
+
+            if (editorMode === 'create') {
+                const prefix = adForm.type === 'pre-roll' 
+                    ? 'video_preroll' 
+                    : adForm.type === 'sidebar' 
+                        ? 'suggested_sidebar' 
+                        : 'homepage_main';
+                payload.slotId = prefix;
+            }
+
             const url = editorMode === 'create' ? '/api/ads' : `/api/ads/${selectedAdSlot._id}`;
             const method = editorMode === 'create' ? 'POST' : 'PUT';
             
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(adForm)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
@@ -2677,7 +2730,7 @@ export default function AdminPage() {
                                                         costPerView: 500,
                                                         totalBudget: 500000,
                                                         ownerId: admin._id || '',
-                                                        status: 'APPROVED'
+                                                        status: 'ACTIVE'
                                                     });
                                                     setShowAdModal(true);
                                                 }}
@@ -2688,311 +2741,89 @@ export default function AdminPage() {
                                         </div>
                                     </div>
 
-                                    {/* Ads Subtabs */}
-                                    <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-xl w-fit">
-                                        {(['review', 'active', 'revenue'] as const).map((sub) => (
-                                            <button
-                                                key={sub}
-                                                onClick={() => setAdSubTab(sub)}
-                                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                    adSubTab === sub 
-                                                        ? 'bg-red-650 text-white shadow-lg' 
-                                                        : 'text-zinc-500 dark:text-white/40 hover:text-zinc-950 dark:hover:text-white'
-                                                }`}
-                                            >
-                                                {sub === 'review' && 'Yêu cầu chờ duyệt'}
-                                                {sub === 'active' && 'Chiến dịch đang chạy'}
-                                                {sub === 'revenue' && 'Báo cáo doanh thu'}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
 
-                                {/* Subtab content 1: REVIEW QUEUE */}
-                                {adSubTab === 'review' && (
-                                    <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-                                        <div className="p-8 border-b border-slate-200 dark:border-white/5">
-                                            <h4 className="font-bold text-sm uppercase tracking-wider">Danh sách chờ duyệt thanh toán hoặc nội dung</h4>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-xs">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 dark:border-white/5 text-zinc-500 dark:text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
-                                                        <th className="px-6 py-4">Chiến dịch</th>
-                                                        <th className="px-6 py-4">Loại</th>
-                                                        <th className="px-6 py-4 text-right">Ngân sách</th>
-                                                        <th className="px-6 py-4">Duyệt thanh toán</th>
-                                                        <th className="px-6 py-4">Duyệt nội dung</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-200 dark:divide-white/[0.02]">
-                                                    {adsList.filter(ad => ad.paymentStatus === 'PENDING' || ad.status === 'PENDING').length > 0 ? (
-                                                        adsList.filter(ad => ad.paymentStatus === 'PENDING' || ad.status === 'PENDING').map((ad) => (
-                                                            <tr key={ad._id} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">
-                                                                <td className="px-6 py-4">
-                                                                    <div className="font-bold text-sm">{ad.title}</div>
-                                                                    <div className="text-[10px] text-zinc-500 dark:text-white/30 font-mono mt-0.5">{ad.clickUrl || 'Không có URL click'}</div>
-                                                                </td>
-                                                                <td className="px-6 py-4 uppercase font-bold tracking-wider text-[10px]">{ad.type}</td>
-                                                                <td className="px-6 py-4 text-right font-mono font-bold">{formatVND(ad.totalBudget)}</td>
-                                                                <td className="px-6 py-4">
-                                                                    {ad.paymentStatus === 'PENDING' ? (
-                                                                        <div className="flex gap-2">
-                                                                            <button 
-                                                                                onClick={() => handleVerifyAdPayment(ad._id, 'APPROVED')}
-                                                                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold cursor-pointer"
-                                                                            >
-                                                                                Duyệt
-                                                                            </button>
-                                                                            <button 
-                                                                                onClick={() => handleVerifyAdPayment(ad._id, 'REJECTED')}
-                                                                                className="px-2.5 py-1 bg-red-650 hover:bg-red-750 text-white rounded font-bold cursor-pointer"
-                                                                            >
-                                                                                Từ chối
-                                                                            </button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-emerald-500 font-bold">✓ Đã duyệt ({ad.paymentStatus})</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    {ad.status === 'PENDING' ? (
-                                                                        <div className="flex gap-2">
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    setSelectedAdSlot(ad);
-                                                                                    handleVerifyAdContent('approve');
-                                                                                }}
-                                                                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold cursor-pointer"
-                                                                            >
-                                                                                Duyệt
-                                                                            </button>
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    setSelectedAdSlot(ad);
-                                                                                    setShowRejectAdModal(true);
-                                                                                }}
-                                                                                className="px-2.5 py-1 bg-red-650 hover:bg-red-755 text-white rounded font-bold cursor-pointer"
-                                                                            >
-                                                                                Từ chối
-                                                                            </button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-emerald-500 font-bold">✓ Đã duyệt ({ad.status})</span>
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan={5} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
-                                                                Không có chiến dịch quảng cáo nào đang chờ duyệt.
+                                <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                    <div className="p-8 border-b border-slate-200 dark:border-white/5">
+                                        <h4 className="font-bold text-sm uppercase tracking-wider">Danh sách quảng cáo hoạt động</h4>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="border-b border-slate-200 dark:border-white/5 text-zinc-500 dark:text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
+                                                    <th className="px-6 py-4">Chiến dịch</th>
+                                                    <th className="px-6 py-4">Loại</th>
+                                                    <th className="px-6 py-4 text-center">Trạng thái</th>
+                                                    <th className="px-6 py-4 text-right">Hành động</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200 dark:divide-white/[0.02]">
+                                                {adsList.filter(ad => !isPendingAd(ad)).length > 0 ? (
+                                                    adsList.filter(ad => !isPendingAd(ad)).map((ad) => (
+                                                        <tr key={ad._id} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">
+                                                            <td className="px-6 py-4 font-bold">
+                                                                <div className="text-sm">{ad.title}</div>
+                                                                {(ad.advertiserName || ad.advertiserId) && (
+                                                                    <div className="text-[10px] text-zinc-500 dark:text-white/30 block mt-0.5">Nhà QC: {ad.advertiserName || ad.advertiserId}</div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 uppercase font-bold tracking-wider text-[10px]">{getAdDisplayType(ad.slotId)}</td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                    ad.isActive || ad.status === 'ACTIVE' || ad.status === 'APPROVED'
+                                                                        ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                                                                        : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                                }`}>
+                                                                    {ad.isActive || ad.status === 'ACTIVE' || ad.status === 'APPROVED' ? 'HOẠT ĐỘNG' : 'TẠM DỪNG'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="flex gap-2 justify-end">
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            setSelectedAdSlot(ad);
+                                                                            const isPreRoll = ad.slotId?.startsWith('video_preroll');
+                                                                            const adType = isPreRoll ? 'pre-roll' : ad.slotId?.startsWith('suggested_sidebar') ? 'sidebar' : 'banner';
+                                                                            setAdForm({
+                                                                                title: ad.title,
+                                                                                type: adType,
+                                                                                videoUrl: isPreRoll ? (ad.mediaUrl || '') : '',
+                                                                                clickUrl: ad.linkUrl || '',
+                                                                                bannerUrl: !isPreRoll ? (ad.mediaUrl || '') : '',
+                                                                                targetViews: ad.targetViews || 1000,
+                                                                                costPerView: ad.costPerView || 500,
+                                                                                totalBudget: ad.totalBudget || 500000,
+                                                                                ownerId: ad.advertiserId || '',
+                                                                                status: ad.status || 'ACTIVE'
+                                                                            });
+                                                                            setEditorMode('edit');
+                                                                            setShowAdModal(true);
+                                                                        }}
+                                                                        className="px-2 py-1 bg-white/5 border border-white/10 rounded font-bold cursor-pointer text-white/80 hover:text-white hover:bg-white/10 transition"
+                                                                    >
+                                                                        Sửa
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleDeleteAd(ad._id)}
+                                                                        className="px-2 py-1 bg-red-650 hover:bg-red-750 text-white rounded font-bold cursor-pointer transition"
+                                                                    >
+                                                                        Xóa
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Subtab content 2: RUNNING CAMPAIGNS */}
-                                {adSubTab === 'active' && (
-                                    <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-                                        <div className="p-8 border-b border-slate-200 dark:border-white/5">
-                                            <h4 className="font-bold text-sm uppercase tracking-wider">Danh sách quảng cáo hoạt động</h4>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-xs">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 dark:border-white/5 text-zinc-500 dark:text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
-                                                        <th className="px-6 py-4">Chiến dịch</th>
-                                                        <th className="px-6 py-4">Loại</th>
-                                                        <th className="px-6 py-4 text-center">Lượt xem / Mục tiêu</th>
-                                                        <th className="px-6 py-4 text-center">Lượt Click</th>
-                                                        <th className="px-6 py-4 text-right">Ngân sách</th>
-                                                        <th className="px-6 py-4 text-center">Trạng thái</th>
-                                                        <th className="px-6 py-4 text-right">Hành động</th>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={4} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
+                                                            Không có chiến dịch quảng cáo nào đang chạy.
+                                                        </td>
                                                     </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-200 dark:divide-white/[0.02]">
-                                                    {adsList.filter(ad => ad.paymentStatus !== 'PENDING' && ad.status !== 'PENDING').length > 0 ? (
-                                                        adsList.filter(ad => ad.paymentStatus !== 'PENDING' && ad.status !== 'PENDING').map((ad) => (
-                                                            <tr key={ad._id} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">
-                                                                <td className="px-6 py-4 font-bold">
-                                                                    <div className="text-sm">{ad.title}</div>
-                                                                    {ad.ownerId?.username && (
-                                                                        <div className="text-[10px] text-zinc-500 dark:text-white/30 block mt-0.5">Nhà QC: {ad.ownerId.username}</div>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4 uppercase font-bold tracking-wider text-[10px]">{ad.type}</td>
-                                                                <td className="px-6 py-4 text-center font-mono font-bold">
-                                                                    {ad.views || 0} / {ad.targetViews}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-center font-mono font-bold">{ad.clicks || 0}</td>
-                                                                <td className="px-6 py-4 text-right font-mono font-bold">{formatVND(ad.totalBudget)}</td>
-                                                                <td className="px-6 py-4 text-center">
-                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                                        ad.status === 'APPROVED' || ad.status === 'ACTIVE' 
-                                                                            ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                                                                            : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                                    }`}>
-                                                                        {ad.status}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="flex gap-2 justify-end">
-                                                                        <button 
-                                                                            onClick={() => {
-                                                                                setSelectedAdSlot(ad);
-                                                                                setAdForm({
-                                                                                    title: ad.title,
-                                                                                    type: ad.type,
-                                                                                    videoUrl: ad.videoUrl || '',
-                                                                                    clickUrl: ad.clickUrl || '',
-                                                                                    bannerUrl: ad.bannerUrl || '',
-                                                                                    targetViews: ad.targetViews,
-                                                                                    costPerView: ad.costPerView,
-                                                                                    totalBudget: ad.totalBudget,
-                                                                                    ownerId: ad.ownerId?._id || ad.ownerId || '',
-                                                                                    status: ad.status
-                                                                                });
-                                                                                setEditorMode('edit');
-                                                                                setShowAdModal(true);
-                                                                            }}
-                                                                            className="px-2 py-1 bg-white/5 border border-white/10 rounded font-bold cursor-pointer text-white/80 hover:text-white hover:bg-white/10 transition"
-                                                                        >
-                                                                            Sửa
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => handleDeleteAd(ad._id)}
-                                                                            className="px-2 py-1 bg-red-650 hover:bg-red-750 text-white rounded font-bold cursor-pointer transition"
-                                                                        >
-                                                                            Xóa
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan={7} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
-                                                                Không có chiến dịch quảng cáo nào đang chạy.
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                )}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                )}
-
-                                {/* Subtab content 3: REVENUE REPORT */}
-                                {adSubTab === 'revenue' && (() => {
-                                    if (isRevenueLoading) {
-                                        return (
-                                            <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                                                <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-                                                <span className="text-zinc-500 dark:text-white/40 text-xs font-bold">Đang tải báo cáo tài chính...</span>
-                                            </div>
-                                        );
-                                    }
-
-                                    return (
-                                        <div className="space-y-8">
-                                            {/* KPI Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                                <div className="bg-[#121212] border border-white/5 p-5 rounded-2xl flex items-center gap-4 text-left">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-                                                        <Coins size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white/40 text-[9px] font-bold uppercase tracking-wider">Hợp đồng cam kết</p>
-                                                        <p className="text-lg font-black text-white mt-0.5">{formatVND(adRevenueData?.contractRevenue || 0)}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-[#121212] border border-white/5 p-5 rounded-2xl flex items-center gap-4 text-left">
-                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                                                        <TrendingUp size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white/40 text-[9px] font-bold uppercase tracking-wider">QC thực tiêu</p>
-                                                        <p className="text-lg font-black text-emerald-500 mt-0.5">{formatVND(adRevenueData?.earnedRevenue || 0)}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-[#121212] border border-white/5 p-5 rounded-2xl flex items-center gap-4 text-left">
-                                                    <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-                                                        <Clock size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white/40 text-[9px] font-bold uppercase tracking-wider">Chờ duyệt tiền</p>
-                                                        <p className="text-lg font-black text-yellow-500 mt-0.5">{formatVND(adRevenueData?.pendingRevenue || 0)}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-[#121212] border border-white/5 p-5 rounded-2xl flex items-center gap-4 text-left">
-                                                    <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
-                                                        <DollarSign size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-red-550 text-[9px] font-bold uppercase tracking-wider">Tổng doanh thu quảng cáo</p>
-                                                        <p className="text-lg font-black text-red-500 mt-0.5">{formatVND(adRevenueData?.earnedRevenue || 0)}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Campaigns detailed sheet */}
-                                            <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-                                                <div className="p-8 border-b border-slate-200 dark:border-white/5">
-                                                    <h4 className="font-bold text-sm uppercase tracking-wider">Chi tiết ngân sách từng chiến dịch</h4>
-                                                </div>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-left text-xs">
-                                                        <thead>
-                                                            <tr className="border-b border-slate-200 dark:border-white/5 text-zinc-500 dark:text-white/40 text-[10px] font-black uppercase tracking-widest bg-white/[0.01]">
-                                                                <th className="px-6 py-4">Chiến dịch</th>
-                                                                <th className="px-6 py-4 text-right">Tổng ngân sách</th>
-                                                                <th className="px-6 py-4 text-right">Đã chi tiêu</th>
-                                                                <th className="px-6 py-4 text-right">Còn lại</th>
-                                                                <th className="px-6 py-4 text-center">Tiến độ views</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-200 dark:divide-white/[0.02]">
-                                                            {adsList.length > 0 ? (
-                                                                adsList.map((ad) => {
-                                                                    const cost = (ad.views || 0) * ad.costPerView;
-                                                                    const remaining = Math.max(0, ad.totalBudget - cost);
-                                                                    const percent = Math.min(100, Math.round(((ad.views || 0) / ad.targetViews) * 100));
-                                                                    return (
-                                                                        <tr key={ad._id} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">
-                                                                            <td className="px-6 py-4 font-bold">{ad.title}</td>
-                                                                            <td className="px-6 py-4 text-right font-mono font-bold">{formatVND(ad.totalBudget)}</td>
-                                                                            <td className="px-6 py-4 text-right font-mono text-zinc-650 dark:text-white/60">{formatVND(cost)}</td>
-                                                                            <td className="px-6 py-4 text-right font-mono text-green-500 font-bold">{formatVND(remaining)}</td>
-                                                                            <td className="px-6 py-4">
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <div className="flex-1 bg-white/10 h-2 rounded-full overflow-hidden">
-                                                                                        <div className="bg-red-500 h-full" style={{ width: `${percent}%` }}></div>
-                                                                                    </div>
-                                                                                    <span className="font-mono text-[10px] font-bold whitespace-nowrap">{percent}% ({ad.views || 0}/{ad.targetViews})</span>
-                                                                                </div>
-                                                                            </td>
-                                                                        </tr>
-                                                                    );
-                                                                })
-                                                            ) : (
-                                                                <tr>
-                                                                    <td colSpan={5} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
-                                                                        Không có dữ liệu chiến dịch nào.
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -3411,9 +3242,8 @@ export default function AdminPage() {
                                             onChange={(e) => setAdForm({...adForm, status: e.target.value})}
                                             className="w-full bg-[#161616] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-red-500 transition-colors"
                                         >
-                                            <option value="APPROVED">Kích hoạt (APPROVED)</option>
-                                            <option value="PENDING">Chờ duyệt (PENDING)</option>
-                                            <option value="REJECTED">Từ chối (REJECTED)</option>
+                                            <option value="ACTIVE">Kích hoạt (ACTIVE)</option>
+                                            <option value="PAUSED_BY_USER">Tạm dừng (PAUSED)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -3442,41 +3272,6 @@ export default function AdminPage() {
                                         className="w-full bg-[#161616] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-red-500 transition-colors font-mono"
                                         placeholder="https://destination-link.com"
                                     />
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-white/40 uppercase mb-2">Mục tiêu Views</label>
-                                        <input 
-                                            type="number" 
-                                            value={adForm.targetViews}
-                                            onChange={(e) => {
-                                                const views = Number(e.target.value);
-                                                setAdForm({...adForm, targetViews: views, totalBudget: views * adForm.costPerView});
-                                            }}
-                                            className="w-full bg-[#161616] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-red-500 transition-colors font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-white/40 uppercase mb-2">Giá / View (đ)</label>
-                                        <input 
-                                            type="number" 
-                                            value={adForm.costPerView}
-                                            onChange={(e) => {
-                                                const cpv = Number(e.target.value);
-                                                setAdForm({...adForm, costPerView: cpv, totalBudget: adForm.targetViews * cpv});
-                                            }}
-                                            className="w-full bg-[#161616] border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-red-500 transition-colors font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-white/40 uppercase mb-2">Tổng ngân sách (đ)</label>
-                                        <input 
-                                            type="number" 
-                                            value={adForm.totalBudget}
-                                            readOnly
-                                            className="w-full bg-[#131313] border border-white/5 rounded-xl px-4 py-3 text-sm outline-none text-zinc-500 font-mono"
-                                        />
-                                    </div>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3 border-t border-white/5 pt-4">

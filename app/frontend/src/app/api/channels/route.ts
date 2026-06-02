@@ -47,7 +47,7 @@ export async function POST(req: Request) {
         let avatarUrl = '/assets/img/avata.jpg'; // Default
         let bannerUrl = ''; // Default empty
 
-        const uploadDir = path.join(process.cwd(), '..', 'server', 'uploads');
+        const uploadDir = path.join(process.cwd(), '..', 'backend', 'uploads');
         await mkdir(uploadDir, { recursive: true });
 
         if (avatarFile) {

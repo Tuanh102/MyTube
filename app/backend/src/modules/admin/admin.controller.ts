@@ -141,6 +141,21 @@ export class AdminController {
     return this.adminService.staffLogin(body);
   }
 
+  @Post("staff/:id/delete")
+  async deleteStaff(@Param("id") id: string) {
+    return this.adminService.deleteStaff(id);
+  }
+
+  @Post("staff/:id/lock")
+  async lockStaff(@Param("id") id: string) {
+    return this.adminService.lockStaff(id);
+  }
+
+  @Post("staff/:id/unlock")
+  async unlockStaff(@Param("id") id: string) {
+    return this.adminService.unlockStaff(id);
+  }
+
   @Get("premium-packages")
   async getPremiumPackages() {
     return this.paymentsService.getPremiumPackages();

@@ -50,11 +50,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, url: uploadResult.secure_url });
         } else {
             // Upload image to backend/uploads/ads
-            let uploadDir = path.join(process.cwd(), "..", "backend", "uploads", "ads");
-            if (!fs.existsSync(path.join(process.cwd(), "..", "backend"))) {
-                uploadDir = path.join(process.cwd(), "..", "server", "uploads", "ads");
-            }
-
+            const uploadDir = path.join(process.cwd(), "..", "backend", "uploads", "ads");
             await mkdir(uploadDir, { recursive: true });
 
             const bytes = await file.arrayBuffer();
