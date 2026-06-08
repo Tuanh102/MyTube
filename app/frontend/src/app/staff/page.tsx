@@ -33,22 +33,97 @@ import {
     BadgeCheck,
     Building2,
     Eye,
-    FileText
+    FileText,
+    User,
+    Lock
 } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
 import ClockWidget from '@/components/ClockWidget';
 
+function cleanString(str: string): string {
+    return str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+        .replace(/[^a-z0-9\s]/g, "") // remove punctuation
+        .trim();
+}
+
+function getFuzzyScore(s1: string, s2: string): number {
+    const m = s1.length;
+    const n = s2.length;
+    if (m === 0 || n === 0) return 0;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = Math.min(
+                    dp[i - 1][j] + 1,    // deletion
+                    dp[i][j - 1] + 1,    // insertion
+                    dp[i - 1][j - 1] + 1 // substitution
+                );
+            }
+        }
+    }
+    const dist = dp[m][n];
+    const maxLen = Math.max(m, n);
+    return maxLen === 0 ? 1.0 : 1.0 - dist / maxLen;
+}
+
+function matchTab(query: string, keywordsMap: Record<string, string[]>): string | null {
+    const cleaned = cleanString(query);
+    if (!cleaned) return null;
+
+    let bestMatch: string | null = null;
+    let maxScore = 0;
+
+    for (const [tab, keywords] of Object.entries(keywordsMap)) {
+        for (const keyword of keywords) {
+            const cleanedKeyword = cleanString(keyword);
+            
+            // 1. Exact or substring match
+            if (cleanedKeyword === cleaned) {
+                return tab; // instant exact match
+            }
+            if (cleanedKeyword.includes(cleaned) || cleaned.includes(cleanedKeyword)) {
+                const score = Math.min(cleanedKeyword.length, cleaned.length) / Math.max(cleanedKeyword.length, cleaned.length) * 0.9;
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestMatch = tab;
+                }
+            }
+
+            // 2. Fuzzy match using Levenshtein distance
+            const score = getFuzzyScore(cleaned, cleanedKeyword);
+            if (score > maxScore) {
+                maxScore = score;
+                bestMatch = tab;
+            }
+        }
+    }
+
+    return maxScore > 0.4 ? bestMatch : null;
+}
 
 export default function StaffPage() {
     const router = useRouter();
     const { theme, setTheme } = useUI();
     const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
     const themeDropdownRef = useRef<HTMLDivElement>(null);
+    const profileDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
                 setIsThemeDropdownOpen(false);
+            }
+            if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+                setIsHeaderDropdownOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -59,6 +134,144 @@ export default function StaffPage() {
 
     const [staff, setStaff] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [highlightedTab, setHighlightedTab] = useState<string | null>(null);
+
+    // Profile & Dropdown states
+    const [isHeaderDropdownOpen, setIsHeaderDropdownOpen] = useState(false);
+    const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(false);
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [profileNewPassword, setProfileNewPassword] = useState('');
+    const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
+    const [isProfileChangingPassword, setIsProfileChangingPassword] = useState(false);
+    const [profilePasswordError, setProfilePasswordError] = useState('');
+    const [profilePasswordSuccess, setProfilePasswordSuccess] = useState('');
+
+    // First time password change states
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [isSkipped, setIsSkipped] = useState(false);
+
+    const handleSmartSearch = (query: string) => {
+        if (!query) return;
+        const STAFF_TAB_KEYWORDS = {
+            overview: ['tong quan', 'overview', 'dashboard', 'trang chu', 'thong ke', 'stats'],
+            moderation: ['kiem duyet', 'video', 'videos', 'pending', 'duyet video', 'cho duyet', 'clip', 'clips'],
+            reports: ['bao cao', 'vi pham', 'reports', 'report', 'giai quyet', 'flag', 'xoa video'],
+            lives: ['live', 'stream', 'lives', 'phat truc tiep', 'moderation live', 'kiem duyet live', 'tat live'],
+            support: ['ho tro', 'support', 'messages', 'chat', 'ticket', 'tickets', 'khach hang', 'tra loi support'],
+            verification: ['xac minh', 'verify', 'tich xanh', 'kenh', 'channels', 'penalize', 'phat', 'phat kenh', 'strike']
+        };
+
+        const match = matchTab(query, STAFF_TAB_KEYWORDS);
+        if (match) {
+            setActiveTab(match);
+            setHighlightedTab(match);
+            setTimeout(() => {
+                setHighlightedTab(null);
+            }, 3000);
+            
+            // Scroll to the content container
+            setTimeout(() => {
+                const element = document.getElementById(`tab-content-${match}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        } else {
+            alert(`Không tìm thấy tính năng nào phù hợp với "${query}"`);
+        }
+    };
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (newPassword.length < 6) {
+            setPasswordError('Mật khẩu phải chứa ít nhất 6 ký tự');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError('Mật khẩu xác nhận không khớp');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        try {
+            const res = await fetch(`/api/admin/staff/${staff._id}/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: newPassword })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setPasswordSuccess('Đổi mật khẩu thành công!');
+                // Cập nhật staff_token trong sessionStorage để không hiện modal nữa
+                const updatedStaff = { ...staff, isFirstLogin: false };
+                sessionStorage.setItem('staff_token', JSON.stringify(updatedStaff));
+                setStaff(updatedStaff);
+                
+                setTimeout(() => {
+                    setNewPassword('');
+                    setConfirmPassword('');
+                }, 1500);
+            } else {
+                setPasswordError(data.message || 'Có lỗi xảy ra khi đổi mật khẩu');
+            }
+        } catch (err) {
+            setPasswordError('Lỗi kết nối tới máy chủ');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+    const handleProfileChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setProfilePasswordError('');
+        setProfilePasswordSuccess('');
+
+        if (profileNewPassword.length < 6) {
+            setProfilePasswordError('Mật khẩu phải chứa ít nhất 6 ký tự');
+            return;
+        }
+
+        if (profileNewPassword !== profileConfirmPassword) {
+            setProfilePasswordError('Mật khẩu xác nhận không khớp');
+            return;
+        }
+
+        setIsProfileChangingPassword(true);
+        try {
+            const res = await fetch(`/api/admin/staff/${staff._id}/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: profileNewPassword })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setProfilePasswordSuccess('Đổi mật khẩu thành công!');
+                const updatedStaff = { ...staff, isFirstLogin: false };
+                sessionStorage.setItem('staff_token', JSON.stringify(updatedStaff));
+                setStaff(updatedStaff);
+                
+                setTimeout(() => {
+                    setProfileNewPassword('');
+                    setProfileConfirmPassword('');
+                }, 1500);
+            } else {
+                setProfilePasswordError(data.message || 'Có lỗi xảy ra khi đổi mật khẩu');
+            }
+        } catch (err) {
+            setProfilePasswordError('Lỗi kết nối tới máy chủ');
+        } finally {
+            setIsProfileChangingPassword(false);
+        }
+    };
+
     const [stats, setStats] = useState<any>({
         totalUsers: 0,
         totalVideos: 0,
@@ -132,6 +345,7 @@ export default function StaffPage() {
                 fetchTickets();
                 fetchPendingVideos();
                 fetchReports();
+                fetchActiveStreams();
             } catch (e) {
                 sessionStorage.removeItem('staff_token');
                 router.push('/staff/login');
@@ -422,6 +636,21 @@ export default function StaffPage() {
         return "Chào buổi tối";
     };
 
+    const isTicketPending = (ticket: any) => {
+        return ticket.status === 'OPEN' && (
+            !ticket.messages || 
+            ticket.messages.length === 0 || 
+            ticket.messages[ticket.messages.length - 1].senderRole === 'USER'
+        );
+    };
+
+    const pendingVideosCount = pendingVideos.length;
+    const pendingReportsCount = reports.length;
+    const pendingTicketsCount = tickets.filter(isTicketPending).length;
+    const warningStreams = activeStreams.filter(s => s.reports && s.reports.length > 0);
+    const pendingStreamsCount = warningStreams.length;
+    const totalUnresolvedTasks = pendingVideosCount + pendingReportsCount + pendingTicketsCount + pendingStreamsCount;
+
     if (!staff) return <div className="min-h-screen bg-rose-50/20 dark:bg-[#020202] transition-colors duration-300"></div>;
 
     return (
@@ -447,10 +676,10 @@ export default function StaffPage() {
                 </div>
 
                 <nav className="flex-1 px-3.5 space-y-4 mt-6 overflow-y-auto overflow-x-hidden custom-scrollbar relative z-10">
-                    {/* Group 1: Tổng quan */}
+                    {/* Group 1: Tổng quan công việc */}
                     <div className="space-y-1">
                         <div className="px-3.5 mb-2 text-[10px] font-black uppercase tracking-wider text-red-500/60 transition-all opacity-0 group-hover:opacity-100 h-0 group-hover:h-auto overflow-hidden">
-                            Tổng quan
+                            Tổng quan công việc
                         </div>
                         <button 
                             onClick={() => setActiveTab('overview')}
@@ -461,7 +690,7 @@ export default function StaffPage() {
                             }`}
                         >
                             <LayoutDashboard size={18} className="flex-shrink-0" />
-                            <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto group-hover:ml-4 transition-all duration-300 overflow-hidden">Tổng quan</span>
+                            <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto group-hover:ml-4 transition-all duration-300 overflow-hidden">Tổng quan công việc</span>
                         </button>
                     </div>
 
@@ -576,6 +805,24 @@ export default function StaffPage() {
                     </div>
                     
                     <div className="flex items-center gap-6">
+                        {/* Search Form */}
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement)?.value?.trim();
+                                if (q) handleSmartSearch(q);
+                            }}
+                            className="flex items-center gap-3 text-zinc-400 dark:text-white/40 hover:text-zinc-600 dark:hover:text-white/60 transition-colors group mr-4"
+                        >
+                            <button type="submit" className="p-1.5 hover:text-red-500 transition-colors"><Search size={18} /></button>
+                            <input
+                                name="q"
+                                type="text"
+                                placeholder="Tìm kiếm thông minh AI..."
+                                className="bg-transparent text-sm font-medium text-zinc-800 dark:text-white placeholder:text-zinc-450 dark:placeholder:text-white/30 outline-none w-48 focus:w-64 transition-all duration-300 hidden md:block"
+                            />
+                        </form>
+
                         {/* Theme dropdown */}
                         <div className="relative" ref={themeDropdownRef}>
                             <button
@@ -625,12 +872,47 @@ export default function StaffPage() {
                         {/* Real-time clock */}
                         <ClockWidget />
 
-                        <div className="flex items-center gap-3 bg-white/60 dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 px-4 py-2 rounded-xl">
-                            <div className="text-right">
-                                <p className="text-xs font-bold text-zinc-800 dark:text-white">{staff.name}</p>
-                                <p className="text-[10px] font-bold text-red-500 uppercase">Nhân viên kiểm duyệt</p>
+                        <div ref={profileDropdownRef} className="relative">
+                            <div 
+                                onClick={() => setIsHeaderDropdownOpen(!isHeaderDropdownOpen)}
+                                className="flex items-center gap-3 bg-white/60 dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 px-4 py-2 rounded-xl cursor-pointer hover:bg-rose-50 dark:hover:bg-white/5 transition-all hover:border-red-500/20"
+                                title="Tùy chọn tài khoản"
+                            >
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-zinc-800 dark:text-white">{staff?.name}</p>
+                                    <p className="text-[10px] font-bold text-red-500 uppercase">Nhân viên kiểm duyệt</p>
+                                </div>
+                                <img src={staff?.avatar_url || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-rose-100 dark:border-white/10 object-cover" alt="" />
                             </div>
-                            <img src={staff.avatar_url || '/assets/img/avata.jpg'} className="w-8 h-8 rounded-full border border-rose-100 dark:border-white/10 object-cover" alt="" />
+
+                            {isHeaderDropdownOpen && (
+                                <div className="absolute top-13 right-0 w-56 bg-white dark:bg-[#121212] border border-rose-100 dark:border-white/10 rounded-2xl shadow-xl py-2 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <button
+                                        onClick={() => {
+                                            setIsPersonalInfoOpen(true);
+                                            setIsHeaderDropdownOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-left text-zinc-650 dark:text-white/70 hover:bg-rose-50/50 dark:hover:bg-white/5 hover:text-zinc-955 dark:hover:text-white transition-colors"
+                                    >
+                                        <User size={14} className="text-red-500" />
+                                        <span>Thông tin cá nhân</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setProfilePasswordError('');
+                                            setProfilePasswordSuccess('');
+                                            setProfileNewPassword('');
+                                            setProfileConfirmPassword('');
+                                            setIsChangePasswordOpen(true);
+                                            setIsHeaderDropdownOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-left text-zinc-650 dark:text-white/70 hover:bg-rose-50/50 dark:hover:bg-white/5 hover:text-zinc-955 dark:hover:text-white transition-colors"
+                                    >
+                                        <Lock size={14} className="text-amber-500" />
+                                        <span>Đổi mật khẩu</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -638,135 +920,269 @@ export default function StaffPage() {
                 <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative z-10">
                     {/* Tab 1: Overview */}
                     {activeTab === 'overview' && (
-                        <div className="animate-in fade-in duration-500">
+                        <div id="tab-content-overview" className={`animate-in fade-in duration-500 ${highlightedTab === 'overview' ? 'search-highlight-pulse' : ''}`}>
                             <div className="mb-12">
-                                <h1 className="text-3xl font-bold tracking-tight mb-1 italic uppercase text-zinc-800 dark:text-white">{getGreeting()}, {staff.name.split(' ')[0]}</h1>
-                                <p className="text-zinc-500 dark:text-white/30 text-sm flex items-center gap-2"><Clock size={16} className="text-red-500" /><span>Hệ thống đang hoạt động ổn định.</span></p>
+                                <h1 className="text-3xl font-bold tracking-tight mb-1 italic uppercase text-zinc-800 dark:text-white">
+                                    {getGreeting()}, {staff.name.split(' ')[0]}. Bạn có <span className="text-red-500">{totalUnresolvedTasks}</span> công việc chưa giải quyết.
+                                </h1>
+                                <p className="text-zinc-500 dark:text-white/30 text-sm flex items-center gap-2">
+                                    <Clock size={16} className="text-red-500" />
+                                    <span>Hãy xử lý các đầu mục công việc dưới đây để đảm bảo hệ thống vận hành tốt.</span>
+                                </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                                <div className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-8 rounded-xl hover:border-red-500/20 hover:shadow-sm transition-all">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                                <div 
+                                    onClick={() => setActiveTab('moderation')}
+                                    className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-6 rounded-2xl hover:border-amber-500/40 hover:shadow-md hover:shadow-amber-500/5 transition-all cursor-pointer group"
+                                >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-green-500/10 text-green-500 rounded-lg flex items-center justify-center"><CheckCircle size={24} /></div>
+                                        <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><Video size={24} /></div>
                                         <div>
-                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{stats.totalVideos}</h3>
-                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest">Tổng số Video</p>
+                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{pendingVideosCount}</h3>
+                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest mt-0.5">Video chờ duyệt</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-8 rounded-xl hover:border-red-500/20 hover:shadow-sm transition-all cursor-pointer" onClick={() => setActiveTab('support')}>
+                                <div 
+                                    onClick={() => setActiveTab('reports')}
+                                    className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-6 rounded-2xl hover:border-red-500/40 hover:shadow-md hover:shadow-red-500/5 transition-all cursor-pointer group"
+                                >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center"><MessageSquare size={24} /></div>
+                                        <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><Flag size={24} /></div>
                                         <div>
-                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{tickets.filter(t => t.status === 'OPEN').length}</h3>
-                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest">Yêu cầu hỗ trợ</p>
+                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{pendingReportsCount}</h3>
+                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest mt-0.5">Báo cáo vi phạm</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-8 rounded-xl hover:border-red-500/20 hover:shadow-sm transition-all cursor-pointer" onClick={() => setActiveTab('moderation')}>
+                                <div 
+                                    onClick={() => setActiveTab('support')}
+                                    className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-6 rounded-2xl hover:border-blue-500/40 hover:shadow-md hover:shadow-blue-500/5 transition-all cursor-pointer group"
+                                >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-lg flex items-center justify-center"><Zap size={24} /></div>
+                                        <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><MessageSquare size={24} /></div>
                                         <div>
-                                            <h3 className="text-2xl font-bold tabular-nums text-amber-500">{stats.pendingVideos}</h3>
-                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest">Video chờ duyệt</p>
+                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{pendingTicketsCount}</h3>
+                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest mt-0.5">Yêu cầu hỗ trợ</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div 
+                                    onClick={() => setActiveTab('lives')}
+                                    className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-6 rounded-2xl hover:border-orange-500/40 hover:shadow-md hover:shadow-orange-500/5 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><Radio size={24} /></div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold tabular-nums text-zinc-800 dark:text-zinc-100">{pendingStreamsCount}</h3>
+                                            <p className="text-zinc-400 dark:text-white/20 text-[10px] font-black uppercase tracking-widest mt-0.5">Live Stream cảnh báo</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-{/* Grid of Chart & Performance metrics for Staff Dashboard */}
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500 delay-100">
-                                {/* Moderation Activity Chart */}
-                                <div className="lg:col-span-2 bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-8 flex flex-col min-h-[360px] shadow-sm backdrop-blur-md">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div>
-                                            <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Hiệu suất kiểm duyệt hệ thống</h4>
-                                            <p className="text-[11px] text-zinc-400 dark:text-white/20 mt-1">Khối lượng nội dung được điều hành xử lý trong 7 ngày qua.</p>
+                                {/* Left Column: Videos & Reports (width: 2/3) */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    {/* Video Moderation Queue */}
+                                    <div className="bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 shadow-sm backdrop-blur-md">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-2.5">
+                                                <Video size={18} className="text-amber-500" />
+                                                <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Phê duyệt Video</h4>
+                                            </div>
+                                            <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-black">{pendingVideosCount} chờ duyệt</span>
                                         </div>
-                                        <div className="flex gap-2 bg-rose-50/50 dark:bg-white/[0.02] p-1 rounded-xl border border-rose-100 dark:border-white/5">
-                                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Phê duyệt</span>
-                                            <span className="text-[10px] font-bold text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg">Từ chối</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex-1 flex items-end gap-4 px-2 min-h-[180px]">
-                                        {getStaffChartData().map((item, i) => {
 
-
-
-
-
-
-
-
-                                            const chartItems = getStaffChartData();
-                                            const maxVal = Math.max(...chartItems.map(item => Math.max(item.approved, item.rejected, 1)), 5);
-                                            const approvedHeight = (item.approved / maxVal) * 100;
-                                            const rejectedHeight = (item.rejected / maxVal) * 100;
-                                            return (
-                                                <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end group">
-                                                    <div className="w-full flex gap-1.5 h-[160px] items-end justify-center">
-                                                        {/* Approved Bar */}
-                                                        <div 
-                                                            className="w-1/2 bg-emerald-500/20 hover:bg-gradient-to-t hover:from-emerald-600 hover:to-teal-400 transition-all duration-300 rounded-t-md relative flex justify-center group/bar"
-                                                            style={{ height: `${approvedHeight}%` }}
-                                                        >
-                                                            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-zinc-900/90 text-white text-[9px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity font-mono z-30 shadow-xl pointer-events-none whitespace-nowrap">
-                                                                {item.approved} duyệt
-                                                            </div>
-                                                        </div>
-                                                        {/* Rejected Bar */}
-                                                        <div 
-                                                            className="w-1/2 bg-red-500/20 hover:bg-gradient-to-t hover:from-red-600 hover:to-orange-500 transition-all duration-300 rounded-t-md relative flex justify-center group/bar2"
-                                                            style={{ height: `${rejectedHeight}%` }}
-                                                        >
-                                                            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-zinc-900/90 text-white text-[9px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover/bar2:opacity-100 transition-opacity font-mono z-30 shadow-xl pointer-events-none whitespace-nowrap">
-                                                                {item.rejected} từ chối
-                                                            </div>
+                                        <div className="space-y-4">
+                                            {pendingVideos.slice(0, 3).map((video) => (
+                                                <div key={video._id} className="p-4 bg-rose-50/10 dark:bg-white/[0.01] border border-rose-100/50 dark:border-white/5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-red-500/10 transition-all">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <img 
+                                                            src={`http://127.0.0.1:5000${video.thumbnail_url}`} 
+                                                            className="w-20 aspect-video rounded-lg object-cover bg-zinc-950 flex-shrink-0" 
+                                                            alt="" 
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-xs text-zinc-800 dark:text-white truncate max-w-[240px] sm:max-w-[320px]">{video.title}</p>
+                                                            <p className="text-[10px] text-zinc-400 dark:text-white/20 mt-1">Kênh: <b>{video.channel?.channel_name}</b></p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-[10px] text-zinc-400 dark:text-white/20 font-mono whitespace-nowrap">{item.day}</span>
+                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                        <button 
+                                                            onClick={() => handleModeration(video._id, 'reject')}
+                                                            disabled={isActionLoading === video._id}
+                                                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-red-500/20 text-red-500 text-[10px] font-black hover:bg-red-500/10 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                        >
+                                                            <XCircle size={12} /> Từ chối
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleModeration(video._id, 'approve')}
+                                                            disabled={isActionLoading === video._id}
+                                                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-red-650 text-white text-[10px] font-black hover:bg-red-700 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                        >
+                                                            <CheckCircle size={12} /> Phê duyệt
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            );
-                                        })}
+                                            ))}
+
+                                            {pendingVideosCount === 0 && (
+                                                <div className="py-8 text-center text-zinc-400 dark:text-white/20 italic text-xs">
+                                                    🎉 Tuyệt vời! Không còn video nào đang chờ duyệt.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Unresolved Reports Queue */}
+                                    <div className="bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 shadow-sm backdrop-blur-md">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-2.5">
+                                                <Flag size={18} className="text-red-500" />
+                                                <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Báo cáo vi phạm</h4>
+                                            </div>
+                                            <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-black">{pendingReportsCount} chưa xử lý</span>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {reports.slice(0, 3).map((report) => {
+                                                const isChannel = report.type === 'channel';
+                                                return (
+                                                    <div key={report._id} className="p-4 bg-rose-50/10 dark:bg-white/[0.01] border border-rose-100/50 dark:border-white/5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-red-500/10 transition-all">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className={`flex-shrink-0 bg-zinc-950 ${isChannel ? 'w-10 h-10 rounded-full' : 'w-16 aspect-video rounded-lg'} overflow-hidden`}>
+                                                                <img 
+                                                                    src={
+                                                                        isChannel 
+                                                                            ? (report.channelAvatar ? (report.channelAvatar.startsWith('http') ? report.channelAvatar : `http://127.0.0.1:5000${report.channelAvatar}`) : '/assets/img/avata.jpg') 
+                                                                            : (report.videoThumbnail ? (report.videoThumbnail.startsWith('http') ? report.videoThumbnail : `http://127.0.0.1:5000${report.videoThumbnail}`) : '/assets/img/avata.jpg')
+                                                                    } 
+                                                                    className="w-full h-full object-cover" 
+                                                                    alt="" 
+                                                                />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <span className={`text-[8px] font-black px-1.5 py-0.2 rounded ${isChannel ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'} uppercase`}>
+                                                                        {isChannel ? 'Kênh' : 'Video'}
+                                                                    </span>
+                                                                    <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-red-500/10 text-red-500 border border-red-500/20 uppercase">
+                                                                        {report.reason}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="font-bold text-xs text-zinc-800 dark:text-white truncate max-w-[200px] sm:max-w-[300px] mt-1">
+                                                                    {isChannel ? report.channelName : (report.videoTitle || 'Video không khả dụng')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2 w-full sm:w-auto">
+                                                            <button 
+                                                                onClick={() => handleResolveReport(report._id, isChannel ? 'KEEP_CHANNEL' : 'KEEP_VIDEO')}
+                                                                disabled={isActionLoading === report._id}
+                                                                className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-rose-200 dark:border-white/10 text-zinc-700 dark:text-white text-[10px] font-black hover:bg-rose-50/50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-1 cursor-pointer bg-white dark:bg-transparent"
+                                                            >
+                                                                <ShieldCheck size={12} /> Giữ lại
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleResolveReport(report._id, isChannel ? 'DELETE_CHANNEL' : 'DELETE_VIDEO')}
+                                                                disabled={isActionLoading === report._id}
+                                                                className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-red-655 text-white text-[10px] font-black hover:bg-red-700 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                            >
+                                                                <XCircle size={12} /> Xóa
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {pendingReportsCount === 0 && (
+                                                <div className="py-8 text-center text-zinc-400 dark:text-white/20 italic text-xs">
+                                                    🛡️ Tuyệt vời! Không có báo cáo vi phạm nào chưa xử lý.
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* System health and Operating Metrics */}
-                                <div className="lg:col-span-1 bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-8 flex flex-col min-h-[360px] shadow-sm backdrop-blur-md">
-                                    <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white mb-6">Chỉ số vận hành</h4>
-                                    
-                                    <div className="space-y-6 flex-1 flex flex-col justify-center">
-                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
-                                            <div>
-                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">Thời gian phản hồi</p>
-                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Thời gian duyệt video trung bình</p>
+                                {/* Right Column: Tickets & Streams (width: 1/3) */}
+                                <div className="lg:col-span-1 space-y-6">
+                                    {/* Support Tickets Waiting Response */}
+                                    <div className="bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 shadow-sm backdrop-blur-md">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-2.5">
+                                                <MessageSquare size={18} className="text-blue-500" />
+                                                <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Yêu cầu hỗ trợ</h4>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-sm font-black text-red-500 font-mono">{stats.avgModerationTime ? (stats.avgModerationTime < 60000 ? `${Math.round(stats.avgModerationTime / 1000)} giây` : `~${Math.round(stats.avgModerationTime / 60000)} phút`) : 'N/A'}</span>
-                                                <span className="block text-[8px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Tối ưu</span>
-                                            </div>
+                                            <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-black">{pendingTicketsCount} mới</span>
                                         </div>
 
-                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
-                                            <div>
-                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">Tỷ lệ đóng ticket</p>
-                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Yêu cầu hỗ trợ đã giải quyết</p>
+                                        <div className="space-y-4">
+                                            {tickets.filter(isTicketPending).slice(0, 3).map((ticket) => (
+                                                <div key={ticket._id} className="p-4 bg-rose-50/10 dark:bg-white/[0.01] border border-rose-100/50 dark:border-white/5 rounded-xl flex flex-col justify-between gap-3 hover:border-red-500/10 transition-all">
+                                                    <div>
+                                                        <p className="font-bold text-xs text-zinc-800 dark:text-white line-clamp-1">{ticket.subject}</p>
+                                                        <p className="text-[10px] text-zinc-400 dark:text-white/20 mt-1">Từ: <b>{ticket.userId?.username || 'Ẩn danh'}</b></p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setActiveTab('support');
+                                                            handleTicketClick(ticket);
+                                                        }}
+                                                        className="w-full px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <Send size={10} /> Phản hồi nhanh
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {pendingTicketsCount === 0 && (
+                                                <div className="py-8 text-center text-zinc-400 dark:text-white/20 italic text-xs">
+                                                    ✉️ Tuyệt vời! Tất cả yêu cầu hỗ trợ đã được phản hồi.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Live Streams with Warnings */}
+                                    <div className="bg-white dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 shadow-sm backdrop-blur-md">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-2.5">
+                                                <Radio size={18} className="text-orange-500" />
+                                                <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-800 dark:text-white">Live Stream cảnh báo</h4>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-sm font-black text-amber-500 font-mono">{stats.ticketResolutionRate !== undefined ? `${stats.ticketResolutionRate}%` : '100%'}</span>
-                                                <span className="block text-[8px] font-black text-zinc-400 bg-zinc-500/10 px-1.5 py-0.5 rounded border border-zinc-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Tuần này</span>
-                                            </div>
+                                            <span className="bg-orange-500/10 text-orange-500 border border-orange-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-black">{pendingStreamsCount} live</span>
                                         </div>
 
-                                        <div className="flex items-center justify-between border-b border-rose-50 dark:border-white/[0.02] pb-4">
-                                            <div>
-                                                <p className="text-xs font-bold text-zinc-800 dark:text-white">AI kiểm duyệt trước</p>
-                                                <p className="text-[10px] text-zinc-450 dark:text-white/20 mt-0.5">Tự động đối chiếu mã băm video</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-sm font-black text-emerald-500 font-mono">Đang bảo vệ (${stats.fingerprintCount || 0} video)</span>
-                                                <span className="block text-[8px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 mt-1 uppercase relative right-0 max-w-max ml-auto">Bảo vệ 24/7</span>
-                                            </div>
+                                        <div className="space-y-4">
+                                            {warningStreams.slice(0, 3).map((stream) => (
+                                                <div key={stream._id} className="p-4 bg-red-50/10 dark:bg-red-950/5 border border-red-200/20 dark:border-red-500/10 rounded-xl flex flex-col justify-between gap-3 hover:border-red-500/20 transition-all">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <p className="font-bold text-xs text-zinc-800 dark:text-white line-clamp-1">{stream.title}</p>
+                                                            <span className="text-[9px] text-red-500 font-bold bg-red-500/10 px-1.5 py-0.2 rounded border border-red-500/20 flex items-center gap-1">
+                                                                <span className="w-1 h-1 bg-red-500 rounded-full animate-ping" /> {stream.reports.length} báo cáo
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[10px] text-zinc-450 dark:text-white/20">Kênh: <b>{stream.streamerName}</b></p>
+                                                        <p className="text-[9px] text-red-655 dark:text-red-300 font-bold mt-1 line-clamp-1">Lý do: {stream.reports[0]?.reason}</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleForceEndStream(stream._id)}
+                                                        disabled={isLiveActionLoading === stream._id}
+                                                        className="w-full px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                    >
+                                                        <Power size={10} /> Tắt Live
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {pendingStreamsCount === 0 && (
+                                                <div className="py-8 text-center text-zinc-400 dark:text-white/20 italic text-xs">
+                                                    🟢 Tuyệt vời! Không có phòng Live Stream nào bị cảnh cáo.
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -776,7 +1192,7 @@ export default function StaffPage() {
 
                     {/* Tab 2: Moderation */}
                     {activeTab === 'moderation' && (
-                        <div className="animate-in fade-in duration-500">
+                        <div id="tab-content-moderation" className={`animate-in fade-in duration-500 ${highlightedTab === 'moderation' ? 'search-highlight-pulse' : ''}`}>
                             <div className="flex items-center justify-between mb-8">
                                 <h2 className="text-2xl font-bold italic uppercase text-zinc-800 dark:text-white">Hàng chờ kiểm duyệt</h2>
                                 <span className="bg-rose-100/50 dark:bg-white/5 border border-rose-200 dark:border-transparent px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-white/40">
@@ -839,7 +1255,7 @@ export default function StaffPage() {
 
                     {/* Tab 3: Support */}
                     {activeTab === 'support' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-in fade-in duration-500">
+                        <div id="tab-content-support" className={`grid grid-cols-1 lg:grid-cols-3 gap-10 animate-in fade-in duration-500 ${highlightedTab === 'support' ? 'search-highlight-pulse' : ''}`}>
                             {/* Danh sách Ticket */}
                             <div className="lg:col-span-1 space-y-4">
                                 <h2 className="text-xl font-bold mb-6 italic uppercase text-zinc-800 dark:text-white">Danh sách hỗ trợ</h2>
@@ -942,7 +1358,7 @@ export default function StaffPage() {
 
                     {/* Tab 4: Reports */}
                     {activeTab === 'reports' && (
-                        <div className="animate-in fade-in duration-500">
+                        <div id="tab-content-reports" className={`animate-in fade-in duration-500 ${highlightedTab === 'reports' ? 'search-highlight-pulse' : ''}`}>
                             <div className="flex items-center justify-between mb-8">
                                 <h2 className="text-2xl font-bold italic uppercase text-zinc-800 dark:text-white">Báo cáo từ người dùng</h2>
                                 <span className="bg-rose-100/50 dark:bg-white/5 border border-rose-200 dark:border-transparent px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-white/40">
@@ -1029,7 +1445,7 @@ export default function StaffPage() {
 
                     {/* Tab 5: Lives */}
                     {activeTab === 'lives' && (
-                        <div className="animate-in fade-in duration-500">
+                        <div id="tab-content-lives" className={`animate-in fade-in duration-500 ${highlightedTab === 'lives' ? 'search-highlight-pulse' : ''}`}>
                             <div className="flex items-center justify-between mb-8">
                                 <h2 className="text-2xl font-bold italic uppercase text-zinc-800 dark:text-white">Kiểm duyệt Live Stream</h2>
                                 <span className="bg-rose-100/50 dark:bg-white/5 border border-rose-200 dark:border-transparent px-4 py-2 rounded-lg text-xs font-bold text-zinc-600 dark:text-white/40">
@@ -1123,7 +1539,7 @@ export default function StaffPage() {
 
                     {/* Tab 6: Channel Management — Verification & Penalties */}
                     {activeTab === 'verification' && (
-                        <div className="animate-in fade-in duration-500 space-y-6">
+                        <div id="tab-content-verification" className={`animate-in fade-in duration-500 space-y-6 ${highlightedTab === 'verification' ? 'search-highlight-pulse' : ''}`}>
                             {/* Stats row */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="bg-white dark:bg-white/[0.02] border border-rose-100 dark:border-white/5 p-5 rounded-xl">
@@ -1452,6 +1868,236 @@ export default function StaffPage() {
                                 </>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FIRST TIME PASSWORD CHANGE MODAL */}
+            {staff && staff.isFirstLogin !== false && !isSkipped && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#121212] border border-rose-100 dark:border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl relative text-zinc-800 dark:text-white">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                <ShieldCheck size={32} />
+                            </div>
+                            <h4 className="text-lg font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Thay đổi mật khẩu lần đầu</h4>
+                            <p className="text-xs text-zinc-500 dark:text-white/40 mt-1.5 leading-relaxed">
+                                Để đảm bảo an toàn bảo mật, bạn nên thay đổi mật khẩu mặc định trong lần đăng nhập đầu tiên.
+                            </p>
+                        </div>
+                        
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-650 dark:text-white/60 uppercase mb-2">Mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-slate-50 dark:bg-zinc-900 border border-rose-100 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-800 dark:text-white focus:border-red-500 focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-650 dark:text-white/60 uppercase mb-2">Xác nhận mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-slate-50 dark:bg-zinc-900 border border-rose-100 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-800 dark:text-white focus:border-red-500 focus:outline-none"
+                                />
+                            </div>
+
+                            {passwordError && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-semibold">
+                                    <AlertCircle size={14} className="flex-shrink-0" />
+                                    <span>{passwordError}</span>
+                                </div>
+                            )}
+
+                            {passwordSuccess && (
+                                <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-500 text-xs rounded-xl flex items-center gap-2 font-semibold">
+                                    <CheckCircle size={14} className="flex-shrink-0" />
+                                    <span>{passwordSuccess}</span>
+                                </div>
+                            )}
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsSkipped(true)}
+                                    className="flex-1 py-3 bg-slate-100 dark:bg-zinc-800 text-zinc-600 dark:text-white font-bold text-xs uppercase rounded-xl border border-rose-100 dark:border-white/5 hover:bg-slate-200 dark:hover:bg-zinc-700 transition"
+                                >
+                                    Bỏ qua
+                                </button>
+                                <button 
+                                    type="submit"
+                                    disabled={isChangingPassword}
+                                    className="flex-1 py-3 bg-gradient-to-r from-red-700 via-red-655 to-amber-500 text-white font-bold text-xs uppercase rounded-xl hover:scale-[1.02] active:scale-[0.98] transition shadow-md border border-red-500/20 flex items-center justify-center gap-1.5"
+                                >
+                                    {isChangingPassword ? <Loader2 size={14} className="animate-spin" /> : 'Lưu mật khẩu'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* STAFF PERSONAL INFO MODAL */}
+            {isPersonalInfoOpen && staff && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#121212] border border-rose-100 dark:border-white/10 rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative text-zinc-800 dark:text-white flex flex-col md:flex-row gap-8">
+                        <button 
+                            onClick={() => setIsPersonalInfoOpen(false)}
+                            className="absolute top-6 right-6 p-2 text-zinc-400 dark:text-white/40 hover:text-zinc-900 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-full cursor-pointer"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        {/* Left side: Avatar and Role */}
+                        <div className="flex flex-col items-center justify-center text-center md:w-1/3 border-r border-rose-50 dark:border-white/5 pr-0 md:pr-8 md:border-b-0 border-b pb-6 md:pb-0">
+                            <div className="relative group mb-4">
+                                <img 
+                                    src={staff.avatar_url || '/assets/img/avata.jpg'} 
+                                    className="w-28 h-28 rounded-full border-4 border-red-500/20 dark:border-red-500/40 object-cover shadow-lg" 
+                                    alt="Staff Avatar" 
+                                />
+                                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold select-none cursor-not-allowed">
+                                    Không thể sửa avatar
+                                </div>
+                            </div>
+                            <h4 className="text-base font-bold text-zinc-900 dark:text-white">{staff.name}</h4>
+                            <span className="mt-2 text-[9px] font-black text-red-500 bg-red-500/10 px-2.5 py-1 rounded border border-red-500/20 uppercase tracking-wider">
+                                NHÂN VIÊN KIỂM DUYỆT
+                            </span>
+                        </div>
+
+                        {/* Right side: Info */}
+                        <div className="flex-1 space-y-6">
+                            <div>
+                                <h3 className="text-lg font-bold uppercase tracking-wider text-zinc-900 dark:text-white border-b border-rose-50 dark:border-white/5 pb-2 mb-4">
+                                    Thông tin cá nhân
+                                </h3>
+                                <div className="grid grid-cols-1 gap-4 text-xs">
+                                    <div>
+                                        <span className="text-zinc-400 dark:text-white/30 block mb-1">Mã định danh (ID/Email)</span>
+                                        <input 
+                                            type="text" 
+                                            value={staff.email} 
+                                            readOnly 
+                                            className="w-full bg-slate-50 dark:bg-zinc-900/50 border border-rose-100/50 dark:border-white/5 rounded-xl px-4 py-2 text-zinc-500 dark:text-white/40 cursor-not-allowed outline-none font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <span className="text-zinc-400 dark:text-white/30 block mb-1">Họ và Tên</span>
+                                        <input 
+                                            type="text" 
+                                            value={staff.name} 
+                                            readOnly 
+                                            className="w-full bg-slate-50 dark:bg-zinc-900/50 border border-rose-100/50 dark:border-white/5 rounded-xl px-4 py-2 text-zinc-500 dark:text-white/40 cursor-not-allowed outline-none"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-amber-500/85 italic font-medium">
+                                        * Staff không có quyền tự thay đổi thông tin cá nhân. Vui lòng liên hệ Admin để cập nhật thông tin.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex gap-4 pt-4 border-t border-rose-50 dark:border-white/5">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsPersonalInfoOpen(false)}
+                                    className="w-full py-2.5 bg-slate-100 dark:bg-zinc-800 text-zinc-600 dark:text-white font-bold text-xs uppercase rounded-xl border border-rose-100 dark:border-white/5 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer text-center"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* STAFF CHANGE PASSWORD MODAL */}
+            {isChangePasswordOpen && staff && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#121212] border border-rose-100 dark:border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl relative text-zinc-800 dark:text-white">
+                        <button 
+                            onClick={() => {
+                                setIsChangePasswordOpen(false);
+                                setProfileNewPassword('');
+                                setProfileConfirmPassword('');
+                                setProfilePasswordError('');
+                                setProfilePasswordSuccess('');
+                            }}
+                            className="absolute top-6 right-6 p-2 text-zinc-400 dark:text-white/40 hover:text-zinc-900 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-full cursor-pointer"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <form onSubmit={handleProfileChangePassword} className="space-y-4">
+                            <h3 className="text-lg font-bold uppercase tracking-wider text-zinc-900 dark:text-white border-b border-rose-50 dark:border-white/5 pb-2 mb-4">
+                                Đổi mật khẩu bảo mật
+                            </h3>
+                            <div>
+                                <label className="block text-[10px] font-bold text-zinc-655 dark:text-white/60 uppercase mb-1">Mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    value={profileNewPassword}
+                                    onChange={(e) => setProfileNewPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-slate-50 dark:bg-zinc-900 border border-rose-100 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-800 dark:text-white focus:border-red-500 focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-zinc-655 dark:text-white/60 uppercase mb-1">Xác nhận mật khẩu mới</label>
+                                <input 
+                                    type="password" 
+                                    value={profileConfirmPassword}
+                                    onChange={(e) => setProfileConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-slate-50 dark:bg-zinc-900 border border-rose-100 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-800 dark:text-white focus:border-red-500 focus:outline-none"
+                                />
+                            </div>
+
+                            {profilePasswordError && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] rounded-xl flex items-center gap-2 font-semibold">
+                                    <AlertCircle size={14} className="flex-shrink-0" />
+                                    <span>{profilePasswordError}</span>
+                                </div>
+                            )}
+
+                            {profilePasswordSuccess && (
+                                <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-500 text-[11px] rounded-xl flex items-center gap-2 font-semibold">
+                                    <CheckCircle size={14} className="flex-shrink-0" />
+                                    <span>{profilePasswordSuccess}</span>
+                                </div>
+                            )}
+
+                            <div className="flex gap-4 pt-2">
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        setIsChangePasswordOpen(false);
+                                        setProfileNewPassword('');
+                                        setProfileConfirmPassword('');
+                                        setProfilePasswordError('');
+                                        setProfilePasswordSuccess('');
+                                    }}
+                                    className="flex-1 py-2.5 bg-slate-100 dark:bg-zinc-800 text-zinc-600 dark:text-white font-bold text-xs uppercase rounded-xl border border-rose-100 dark:border-white/5 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer text-center"
+                                >
+                                    Hủy
+                                </button>
+                                <button 
+                                    type="submit"
+                                    disabled={isProfileChangingPassword}
+                                    className="flex-1 py-2.5 bg-gradient-to-r from-red-700 via-red-655 to-amber-500 text-white font-bold text-xs uppercase rounded-xl hover:scale-[1.02] active:scale-[0.98] transition shadow-md border border-red-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    {isProfileChangingPassword ? <Loader2 size={12} className="animate-spin" /> : 'Lưu mật khẩu'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

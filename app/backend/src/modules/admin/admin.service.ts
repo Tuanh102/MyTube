@@ -687,7 +687,7 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
   async createStaff(dto: { name: string; email: string; password?: string }) {
     const existing = await this.adminModel.findOne({ email: dto.email }).exec();
     if (existing) {
-      throw new HttpException("Email nhân viên đã tồn tại trên hệ thống", HttpStatus.BAD_REQUEST);
+      throw new HttpException("ID nhân viên đã tồn tại trên hệ thống", HttpStatus.BAD_REQUEST);
     }
     const newStaff = new this.adminModel({
       name: dto.name,
@@ -741,6 +741,28 @@ Return ONLY a JSON array of strings containing the query and its expansions, up 
       throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
     }
     staff.isActive = true;
+    await staff.save();
+    return staff;
+  }
+
+  async changeStaffPassword(id: string, newPassword: string) {
+    const staff = await this.adminModel.findOne({ _id: id, role: "STAFF" }).exec();
+    if (!staff) {
+      throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
+    }
+    staff.password = newPassword;
+    staff.isFirstLogin = false;
+    await staff.save();
+    return staff;
+  }
+
+  async updateStaff(id: string, body: { name?: string; avatar_url?: string }) {
+    const staff = await this.adminModel.findOne({ _id: id, role: "STAFF" }).exec();
+    if (!staff) {
+      throw new HttpException("Không tìm thấy tài khoản nhân viên", HttpStatus.NOT_FOUND);
+    }
+    if (body.name !== undefined) staff.name = body.name;
+    if (body.avatar_url !== undefined) staff.avatar_url = body.avatar_url;
     await staff.save();
     return staff;
   }

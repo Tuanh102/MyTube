@@ -46,6 +46,7 @@ import { LayoutDashboard,
     CheckCircle,
     XCircle
 } from 'lucide-react';
+import { Server, Database, Radio, MessageSquare, Wifi, Eye, Edit3, Lock, Unlock, Key } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
 import ClockWidget from '@/components/ClockWidget';
 
@@ -63,6 +64,135 @@ const isPendingAd = (ad: any) => {
            ad.status === 'PENDING' || 
            ad.status === 'PENDING_REVIEW' || 
            ad.status === 'PENDING_PAYMENT';
+};
+
+interface RadialProgressProps {
+    percentage: number;
+    title: string;
+    subTitle: string;
+    gradientId: string;
+    fromColor: string;
+    toColor: string;
+    icon?: React.ReactNode;
+    isGrowth?: boolean;
+}
+
+const RadialProgress: React.FC<RadialProgressProps> = ({ 
+    percentage, 
+    title, 
+    subTitle, 
+    gradientId, 
+    fromColor, 
+    toColor,
+    icon,
+    isGrowth = false
+}) => {
+    const size = 130;
+    const strokeWidth = 11;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    
+    // For growth, it might be negative or above 100, we cap the circle visual between 0 and 100
+    const visualPercentage = Math.min(100, Math.max(0, Math.abs(percentage)));
+    const strokeDashoffset = circumference - (visualPercentage / 100) * circumference;
+
+    return (
+        <div className="bg-white dark:bg-[#0c0c0c]/80 border border-rose-100 dark:border-red-950/20 rounded-3xl p-8 flex flex-col items-center justify-center hover:border-red-500/35 hover:shadow-[0_10px_35px_rgba(244,63,94,0.08)] dark:hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] transition-all duration-500 group relative overflow-hidden text-center shadow-md shadow-rose-100/30 dark:shadow-none min-h-[320px]">
+            {/* Soft decorative background glows */}
+            <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full opacity-[0.03] dark:opacity-[0.07] blur-2xl pointer-events-none transition-opacity duration-550" style={{ backgroundColor: fromColor }}></div>
+            <div className="absolute -left-10 -bottom-10 w-28 h-28 rounded-full opacity-[0.03] dark:opacity-[0.07] blur-2xl pointer-events-none transition-opacity duration-550" style={{ backgroundColor: toColor }}></div>
+            
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-red-650 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-350"></div>
+            
+            <p className="text-zinc-400 dark:text-white/45 text-[11px] font-black uppercase tracking-widest mb-6">{title}</p>
+            
+            <div className="relative flex items-center justify-center mb-6" style={{ width: size, height: size }}>
+                <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_5px_rgba(239,68,68,0.1)] dark:drop-shadow-[0_0_8px_rgba(239,68,68,0.2)]">
+                    <defs>
+                        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={fromColor} />
+                            <stop offset="100%" stopColor={toColor} />
+                        </linearGradient>
+                    </defs>
+                    <circle
+                        className="text-slate-150 dark:text-zinc-900/65 stroke-current"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        r={radius}
+                        cx={size / 2}
+                        cy={size / 2}
+                    />
+                    <circle
+                        stroke={`url(#${gradientId})`}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                        fill="transparent"
+                        r={radius}
+                        cx={size / 2}
+                        cy={size / 2}
+                        className="transition-all duration-1000 ease-out"
+                    />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black font-mono text-zinc-800 dark:text-white tracking-tight">
+                        {isGrowth ? (percentage >= 0 ? `+${percentage.toFixed(1)}%` : `${percentage.toFixed(1)}%`) : `${percentage.toFixed(1)}%`}
+                    </span>
+                    <span className="text-[9px] text-zinc-400 dark:text-white/30 font-bold uppercase tracking-wider mt-0.5">Tỷ lệ</span>
+                </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl px-5 py-2.5 flex items-center justify-center gap-2 mt-2 shadow-inner">
+                {icon}
+                <span className="text-xs font-bold text-zinc-650 dark:text-white/60">{subTitle}</span>
+            </div>
+        </div>
+    );
+};
+
+const CloudinaryDonut = ({ percentage, size = 150, strokeWidth = 14 }: { percentage: number, size?: number, strokeWidth?: number }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (Math.min(100, Math.max(0, percentage)) / 100) * circumference;
+
+    return (
+        <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: size, height: size }}>
+            <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_8px_rgba(59,130,246,0.15)] dark:drop-shadow-[0_0_12px_rgba(59,130,246,0.25)]">
+                <defs>
+                    <linearGradient id="cloudinaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#3b82f6" />
+                        <stop offset="50%" stopColor="#4f46e5" />
+                        <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                </defs>
+                <circle
+                    className="text-slate-150 dark:text-[#161616] stroke-current"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+                <circle
+                    stroke="url(#cloudinaryGrad)"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                    className="transition-all duration-1000 ease-out"
+                />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-3xl font-black font-mono text-zinc-800 dark:text-white tracking-tight">{percentage}%</span>
+                <span className="text-[10px] text-zinc-400 dark:text-white/35 uppercase font-black tracking-widest mt-0.5">Sử dụng</span>
+            </div>
+        </div>
+    );
 };
 
 export default function AdminPage() {
@@ -113,12 +243,22 @@ export default function AdminPage() {
     const [usersList, setUsersList] = useState<any[]>([]);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [showStaffModal, setShowStaffModal] = useState(false);
+    const [showEditStaffModal, setShowEditStaffModal] = useState(false);
     const [staffName, setStaffName] = useState('');
     const [staffEmail, setStaffEmail] = useState('');
     const [staffPassword, setStaffPassword] = useState('');
     const [staffError, setStaffError] = useState('');
     const [staffSuccess, setStaffSuccess] = useState('');
     const [isCreatingStaff, setIsCreatingStaff] = useState(false);
+    const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
+    const [isUploadingFile, setIsUploadingFile] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<any>(null);
+    const [isStaffDetailOpen, setIsStaffDetailOpen] = useState(false);
+    const [editStaffName, setEditStaffName] = useState('');
+    const [editStaffAvatar, setEditStaffAvatar] = useState('');
+    const [editStaffPassword, setEditStaffPassword] = useState('');
+    const [updateStaffError, setUpdateStaffError] = useState('');
+    const [updateStaffSuccess, setUpdateStaffSuccess] = useState('');
 
     // Channel management
     const [allChannels, setAllChannels] = useState<any[]>([]);
@@ -635,6 +775,156 @@ export default function AdminPage() {
             setStaffError('Lỗi kết nối tới máy chủ');
         } finally {
             setIsCreatingStaff(false);
+        }
+    };
+
+    const handleViewStaff = (st: any) => {
+        setSelectedStaff(st);
+        setIsStaffDetailOpen(true);
+    };
+
+    const handleEditStaffClick = (st: any) => {
+        setSelectedStaff(st);
+        setEditStaffName(st.name || '');
+        setEditStaffAvatar(st.avatar_url || '');
+        setEditStaffPassword('');
+        setUpdateStaffError('');
+        setUpdateStaffSuccess('');
+        setShowEditStaffModal(true);
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingFile(true);
+        setUpdateStaffError('');
+        setUpdateStaffSuccess('');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/admin/upload-avatar', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+            if (res.ok && data.url) {
+                setEditStaffAvatar(data.url);
+                setUpdateStaffSuccess('Tải ảnh đại diện lên thành công!');
+            } else {
+                setUpdateStaffError(data.error || 'Lỗi khi tải ảnh đại diện');
+            }
+        } catch (err) {
+            setUpdateStaffError('Lỗi kết nối máy chủ');
+        } finally {
+            setIsUploadingFile(false);
+        }
+    };
+
+    const handleUpdateStaff = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedStaff) return;
+
+        setIsUpdatingStaff(true);
+        setUpdateStaffError('');
+        setUpdateStaffSuccess('');
+
+        try {
+            // 1. Update name and avatar if they changed
+            const nameChanged = editStaffName !== selectedStaff.name;
+            const avatarChanged = editStaffAvatar !== selectedStaff.avatar_url;
+
+            if (nameChanged || avatarChanged) {
+                const res = await fetch(`/api/admin/staff/${selectedStaff._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: editStaffName,
+                        avatar_url: editStaffAvatar
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    setUpdateStaffError(data.error || 'Lỗi khi cập nhật thông tin nhân viên');
+                    setIsUpdatingStaff(false);
+                    return;
+                }
+            }
+
+            // 2. Change password if password field is filled
+            if (editStaffPassword) {
+                const res = await fetch(`/api/admin/staff/${selectedStaff._id}/change-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: editStaffPassword
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    setUpdateStaffError(data.error || 'Lỗi khi đổi mật khẩu');
+                    setIsUpdatingStaff(false);
+                    return;
+                }
+            }
+
+            setUpdateStaffSuccess('Cập nhật nhân viên thành công!');
+            fetchStaff();
+            setTimeout(() => {
+                setShowEditStaffModal(false);
+                setUpdateStaffSuccess('');
+            }, 1500);
+        } catch (err) {
+            setUpdateStaffError('Lỗi kết nối đến máy chủ');
+        } finally {
+            setIsUpdatingStaff(false);
+        }
+    };
+
+    const handleToggleLockStaff = async (st: any) => {
+        const action = st.isActive ? 'lock' : 'unlock';
+        const confirmMsg = st.isActive 
+            ? `Bạn có chắc chắn muốn KHÓA tài khoản của nhân viên ${st.name}?`
+            : `Bạn có muốn MỞ KHÓA tài khoản cho nhân viên ${st.name}?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            const res = await fetch(`/api/admin/staff/${st._id}/${action}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                alert(`Đã ${st.isActive ? 'khóa' : 'mở khóa'} tài khoản nhân viên thành công!`);
+                fetchStaff();
+            } else {
+                const data = await res.json();
+                alert(data.error || `Lỗi khi ${st.isActive ? 'khóa' : 'mở khóa'} nhân viên`);
+            }
+        } catch (err) {
+            alert('Lỗi kết nối máy chủ');
+        }
+    };
+
+    const handleDeleteStaffClick = async (st: any) => {
+        if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản của nhân viên ${st.name}? Thao tác này không thể hoàn tác.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/admin/staff/${st._id}/delete`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                alert('Đã xóa tài khoản nhân viên thành công!');
+                fetchStaff();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Lỗi khi xóa nhân viên');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối máy chủ');
         }
     };
 
@@ -1636,7 +1926,7 @@ export default function AdminPage() {
 
                         {/* Card 3: Số dư khả dụng ví Admin */}
                         <div className="bg-white dark:bg-[#110505]/60 border border-rose-200 dark:border-red-950/20 rounded-2xl p-6 hover:border-red-500/35 hover:shadow-[0_4px_25px_rgba(244,63,94,0.08)] dark:hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] transition-all duration-300 relative overflow-hidden group shadow-sm shadow-rose-100/40 dark:shadow-none">
-                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500 to-red-700 opacity-100 transition-opacity"></div>
+                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500 to-red-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <div className="flex items-center justify-between mb-4">
                                 <p className="text-red-650 dark:text-red-400/80 text-[10px] font-black uppercase tracking-widest">Số dư ví Admin</p>
                                 <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all">
@@ -2271,25 +2561,48 @@ export default function AdminPage() {
                                     <p className="text-zinc-500 dark:text-white/40 text-xs mt-1">Báo cáo chi tiết hiệu suất truy cập, tăng trưởng người dùng và doanh thu toàn sàn.</p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                    <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 p-6 rounded-2xl">
-                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider mb-2">Tăng trưởng Người dùng</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold font-mono">+{stats.userGrowth || '0.0'}%</span>
-                                            <span className="text-xs text-emerald-500 font-bold">Tháng này</span>
+                                    <RadialProgress 
+                                        percentage={parseFloat(stats.userGrowth) || 0} 
+                                        title="Tăng trưởng Người dùng" 
+                                        subTitle="Tháng này" 
+                                        gradientId="userGrowthGrad" 
+                                        fromColor="#f43f5e" 
+                                        toColor="#fbbf24" 
+                                        icon={<TrendingUp size={12} className="text-emerald-500" />}
+                                        isGrowth={true}
+                                    />
+                                    <RadialProgress 
+                                        percentage={parseFloat(stats.retentionRate) || 100} 
+                                        title="Tỷ lệ Giữ chân (Retention Rate)" 
+                                        subTitle="Mục tiêu: 100%" 
+                                        gradientId="retentionGrad" 
+                                        fromColor="#10b981" 
+                                        toColor="#3b82f6" 
+                                        icon={<Activity size={12} className="text-indigo-400" />}
+                                    />
+                                    <div className="bg-white dark:bg-[#0c0c0c]/80 border border-rose-100 dark:border-red-950/20 rounded-3xl p-8 flex flex-col items-center justify-center hover:border-red-500/35 hover:shadow-[0_10px_35px_rgba(244,63,94,0.08)] dark:hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] transition-all duration-500 group relative overflow-hidden text-center shadow-md shadow-rose-100/30 dark:shadow-none min-h-[320px]">
+                                        <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full opacity-[0.03] dark:opacity-[0.07] bg-emerald-500 blur-2xl pointer-events-none transition-opacity duration-550"></div>
+                                        
+                                        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-red-650 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-350"></div>
+                                        
+                                        <p className="text-zinc-400 dark:text-white/45 text-[11px] font-black uppercase tracking-widest mb-6">Tổng lượt xem video</p>
+                                        
+                                        <div className="relative flex items-center justify-center mb-6 w-[130px] h-[130px]">
+                                            <div className="w-[100px] h-[100px] rounded-full bg-emerald-500/10 dark:bg-emerald-500/[0.03] border border-emerald-500/20 flex flex-col items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)] dark:shadow-[0_0_30px_rgba(16,185,129,0.05)] group-hover:scale-105 transition-transform duration-500">
+                                                <PlayCircle size={36} className="animate-pulse mb-1" />
+                                                <span className="text-[8px] font-black uppercase tracking-wider text-emerald-500/60">Live</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 p-6 rounded-2xl">
-                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider mb-2">Tỷ lệ Giữ chân (Retention Rate)</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold font-mono">{stats.retentionRate || '100.0'}%</span>
-                                            <span className="text-xs text-zinc-400 dark:text-white/30">Mục tiêu: 100%</span>
+
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-3xl font-black font-mono text-zinc-800 dark:text-zinc-100 tracking-tight">
+                                                {(stats.totalViews || 0).toLocaleString('vi-VN')}
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 p-6 rounded-2xl">
-                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider mb-2">Tổng lượt xem video</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold font-mono">{(stats.totalViews || 0).toLocaleString('vi-VN')}</span>
-                                            <span className="text-xs text-emerald-500 font-bold">Lượt xem</span>
+                                        
+                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl px-5 py-2.5 flex items-center justify-center gap-2 mt-2 shadow-inner">
+                                            <TrendingUp size={12} className="text-emerald-500 animate-bounce" />
+                                            <span className="text-xs font-bold text-emerald-500">Lượt xem toàn sàn</span>
                                         </div>
                                     </div>
                                 </div>
@@ -2307,47 +2620,175 @@ export default function AdminPage() {
                                             <span className="text-sm text-zinc-500 dark:text-white/40">Đang tải dữ liệu dung lượng lưu trữ từ Cloudinary...</span>
                                         </div>
                                     ) : systemStatus?.cloudinaryStorage ? (
-                                        <div className="bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 p-6 rounded-2xl">
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                        <div className="bg-white/5 dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 p-8 rounded-3xl flex flex-col md:flex-row items-center gap-8 hover:border-red-500/30 transition-all duration-300 relative group overflow-hidden shadow-sm shadow-rose-100/40 dark:shadow-none">
+                                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                            
+                                            <CloudinaryDonut percentage={systemStatus.cloudinaryStorage.used_percent} />
+
+                                            <div className="flex-1 text-center md:text-left space-y-4">
                                                 <div>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="text-2xl font-bold font-mono text-zinc-800 dark:text-white">
+                                                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 justify-center md:justify-start">
+                                                        <span className="text-3xl font-extrabold font-mono text-zinc-800 dark:text-white tracking-tight">
                                                             {formatBytes(systemStatus.cloudinaryStorage.usage)}
                                                         </span>
-                                                        <span className="text-xs text-zinc-500 dark:text-white/40">
-                                                            đã dùng của {formatBytes(systemStatus.cloudinaryStorage.limit)}
+                                                        <span className="text-xs text-zinc-500 dark:text-white/40 font-medium">
+                                                            đã dùng của {formatBytes(systemStatus.cloudinaryStorage.limit)} (Giới hạn tối đa)
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-zinc-500 dark:text-white/30 mt-1">
-                                                        Không gian lưu trữ video và hình ảnh được tải lên từ người dùng.
+                                                    <p className="text-xs text-zinc-500 dark:text-white/30 mt-2 leading-relaxed">
+                                                        Không gian lưu trữ Cloudinary phục vụ cho việc lưu trữ video, hình ảnh, tài nguyên truyền thông được tải lên từ người dùng và người sáng tạo nội dung trong hệ thống.
                                                     </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="text-3xl font-extrabold text-blue-500 font-mono">
-                                                        {systemStatus.cloudinaryStorage.used_percent}%
-                                                    </span>
-                                                    <p className="text-[10px] text-zinc-400 dark:text-white/20 uppercase tracking-widest font-bold">Tỉ lệ sử dụng</p>
-                                                </div>
-                                            </div>
 
-                                            {/* Beautiful progress bar */}
-                                            <div className="w-full h-3 bg-zinc-250 dark:bg-white/10 rounded-full overflow-hidden relative shadow-inner">
-                                                <div 
-                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                                                    style={{ width: `${Math.min(100, Math.max(0, systemStatus.cloudinaryStorage.used_percent))}%` }}
-                                                ></div>
-                                            </div>
-                                            
-                                            {/* Details or quick tips */}
-                                            <div className="flex justify-between items-center mt-3 text-[10px] text-zinc-500 dark:text-white/30 font-medium">
-                                                <span>0 GB (Bắt đầu)</span>
-                                                <span>{formatBytes(systemStatus.cloudinaryStorage.limit)} (Giới hạn tối đa)</span>
+                                                <div className="grid grid-cols-2 gap-4 max-w-sm pt-4 border-t border-slate-100 dark:border-white/5 mx-auto md:mx-0">
+                                                    <div>
+                                                        <p className="text-[10px] text-zinc-400 dark:text-white/20 uppercase font-black tracking-widest">Trạng thái dung lượng</p>
+                                                        <p className="text-xs font-bold text-emerald-500 mt-1">An toàn & Sẵn sàng</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] text-zinc-400 dark:text-white/20 uppercase font-black tracking-widest">Còn lại khả dụng</p>
+                                                        <p className="text-xs font-bold font-mono text-zinc-700 dark:text-zinc-300 mt-1">
+                                                            {formatBytes(systemStatus.cloudinaryStorage.limit - systemStatus.cloudinaryStorage.usage)}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center py-10 bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-2xl text-red-500">
                                             <AlertCircle size={20} className="mr-2" />
                                             <span className="text-sm">Không thể lấy thông tin dung lượng từ Cloudinary. Vui lòng kiểm tra lại cấu hình API.</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 3. System Traffic & Performance Metrics */}
+                                <div className="mt-8 pt-8 border-t border-slate-200 dark:border-white/5">
+                                    <h4 className="text-sm font-bold text-zinc-800 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <Activity size={18} className="text-red-500 animate-pulse" />
+                                        Thông số truy cập & Hiệu năng hệ thống
+                                    </h4>
+
+                                    {isLoadingSystemStatus ? (
+                                        <div className="flex items-center justify-center py-10 bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-2xl">
+                                            <Loader2 className="w-6 h-6 animate-spin text-red-500 mr-2" />
+                                            <span className="text-sm text-zinc-500 dark:text-white/40">Đang tải thông số truy cập từ máy chủ...</span>
+                                        </div>
+                                    ) : systemStatus?.traffic ? (
+                                        <div className="space-y-8">
+                                            {/* Traffic Grid */}
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                {/* Card 1: Online Users */}
+                                                <div className="bg-white/5 dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 hover:border-red-500/30 hover:shadow-[0_4px_25px_rgba(244,63,94,0.06)] dark:hover:shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all duration-300 relative group overflow-hidden shadow-sm shadow-rose-100/40 dark:shadow-none">
+                                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider">Người dùng trực tuyến</p>
+                                                        <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Real-time</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-3xl font-extrabold font-mono text-zinc-800 dark:text-white tracking-tight">
+                                                            {systemStatus.traffic.onlineUsersSimulated}
+                                                        </span>
+                                                        <span className="text-[9px] text-zinc-500 dark:text-white/30 font-medium mt-2 leading-relaxed">
+                                                            * Tính tất cả phiên hoạt động của <b>cả người dùng cũ và người dùng mới</b> khi truy cập vào hệ thống.
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Card 2: Daily Requests */}
+                                                <div className="bg-white/5 dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 hover:border-red-500/30 hover:shadow-[0_4px_25px_rgba(244,63,94,0.06)] dark:hover:shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all duration-300 relative group overflow-hidden shadow-sm shadow-rose-100/40 dark:shadow-none">
+                                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider">Lượt yêu cầu hàng ngày</p>
+                                                        <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                                                            <Server size={12} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-3xl font-extrabold font-mono text-zinc-800 dark:text-white tracking-tight">
+                                                            {systemStatus.traffic.dailyRequests.toLocaleString('vi-VN')}
+                                                        </span>
+                                                        <span className="text-[9px] text-zinc-500 dark:text-white/30 font-medium mt-2 leading-relaxed">
+                                                            * Ghi nhận mỗi lần tải trang, gọi API hoặc gửi dữ liệu của <b>toàn bộ người dùng</b> trên trang web.
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Card 3: Active Live Streams */}
+                                                <div className="bg-white/5 dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 rounded-2xl p-6 hover:border-red-500/30 hover:shadow-[0_4px_25px_rgba(244,63,94,0.06)] dark:hover:shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all duration-300 relative group overflow-hidden shadow-sm shadow-rose-100/40 dark:shadow-none">
+                                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="text-zinc-400 dark:text-white/40 text-[10px] font-black uppercase tracking-wider">Phiên Livestream trực tuyến</p>
+                                                        <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                                            <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Live</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-3xl font-extrabold font-mono text-zinc-800 dark:text-white tracking-tight">
+                                                            {systemStatus.traffic.activeStreams}
+                                                        </span>
+                                                        <span className="text-[9px] text-zinc-500 dark:text-white/30 font-medium mt-2 leading-relaxed">
+                                                            * Số lượng kênh của các Creator đang phát sóng trực tiếp (Livestreaming) đồng thời trên hệ thống.
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* DB Statistics Grid */}
+                                            {systemStatus?.dbCollections && (
+                                                <div className="bg-white/5 dark:bg-[#0c0c0c]/60 border border-rose-100 dark:border-red-950/10 p-6 rounded-3xl shadow-sm dark:shadow-none">
+                                                    <h5 className="text-xs font-black text-zinc-700 dark:text-white/60 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                        <Database size={14} className="text-indigo-400" />
+                                                        Thống kê dữ liệu lưu trữ (Database Collections)
+                                                    </h5>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl p-4 text-center hover:border-red-500/20 transition-all duration-300">
+                                                            <p className="text-zinc-400 dark:text-white/30 text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 mb-1">
+                                                                <Users size={10} />
+                                                                Thành viên
+                                                            </p>
+                                                            <p className="text-xl font-black font-mono text-zinc-800 dark:text-white">{systemStatus.dbCollections.users.toLocaleString('vi-VN')}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl p-4 text-center hover:border-red-500/20 transition-all duration-300">
+                                                            <p className="text-zinc-400 dark:text-white/30 text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 mb-1">
+                                                                <Video size={10} />
+                                                                Videos
+                                                            </p>
+                                                            <p className="text-xl font-black font-mono text-zinc-800 dark:text-white">{systemStatus.dbCollections.videos.toLocaleString('vi-VN')}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl p-4 text-center hover:border-red-500/20 transition-all duration-300">
+                                                            <p className="text-zinc-400 dark:text-white/30 text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 mb-1">
+                                                                <DollarSign size={10} />
+                                                                Đơn hàng
+                                                            </p>
+                                                            <p className="text-xl font-black font-mono text-zinc-800 dark:text-white">{systemStatus.dbCollections.orders.toLocaleString('vi-VN')}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl p-4 text-center hover:border-red-500/20 transition-all duration-300">
+                                                            <p className="text-zinc-400 dark:text-white/30 text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 mb-1">
+                                                                <Building2 size={10} />
+                                                                Kênh Creator
+                                                            </p>
+                                                            <p className="text-xl font-black font-mono text-zinc-800 dark:text-white">{systemStatus.dbCollections.channels.toLocaleString('vi-VN')}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl p-4 text-center hover:border-red-500/20 transition-all duration-300 col-span-2 sm:col-span-1">
+                                                            <p className="text-zinc-400 dark:text-white/30 text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1 mb-1">
+                                                                <MessageSquare size={10} />
+                                                                Bình luận
+                                                            </p>
+                                                            <p className="text-xl font-black font-mono text-zinc-800 dark:text-white">{systemStatus.dbCollections.comments.toLocaleString('vi-VN')}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center py-10 bg-white/5 dark:bg-[#121212] border border-slate-200 dark:border-white/5 rounded-2xl text-red-500">
+                                            <AlertCircle size={20} className="mr-2" />
+                                            <span className="text-sm">Không thể lấy thông tin lưu lượng truy cập hệ thống.</span>
                                         </div>
                                     )}
                                 </div>
@@ -2498,6 +2939,7 @@ export default function AdminPage() {
                                                 <th className="px-6 py-4">Vai trò</th>
                                                 <th className="px-6 py-4">Trạng thái</th>
                                                 <th className="px-6 py-4">Hoạt động cuối</th>
+                                                <th className="px-6 py-4 text-center">Hành động</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-200 dark:divide-white/[0.02] text-xs">
@@ -2537,11 +2979,55 @@ export default function AdminPage() {
                                                         <td className="px-6 py-4 text-zinc-400">
                                                             {st.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                                                         </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <div className="flex justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleViewStaff(st)}
+                                                                    className="px-2.5 py-1.5 bg-blue-500/10 hover:bg-blue-600 text-blue-500 hover:text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                                                                    title="Xem chi tiết"
+                                                                >
+                                                                    <Eye size={12} /> Xem
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleEditStaffClick(st)}
+                                                                    className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-600 text-amber-500 hover:text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                                                                    title="Sửa thông tin"
+                                                                >
+                                                                    <Edit3 size={12} /> Sửa
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleToggleLockStaff(st)}
+                                                                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+                                                                        st.isActive 
+                                                                            ? 'bg-orange-500/10 hover:bg-orange-600 text-orange-500 hover:text-white' 
+                                                                            : 'bg-emerald-500/10 hover:bg-emerald-600 text-emerald-500 hover:text-white'
+                                                                    }`}
+                                                                    title={st.isActive ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                                                                >
+                                                                    {st.isActive ? (
+                                                                        <>
+                                                                            <Lock size={12} /> Khóa
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Unlock size={12} /> Mở khóa
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteStaffClick(st)}
+                                                                    className="px-2.5 py-1.5 bg-red-650/10 hover:bg-red-750 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                                                                    title="Xóa nhân viên"
+                                                                >
+                                                                    <Trash2 size={12} /> Xóa
+                                                                </button>
+                                                            </div>
+                                                        </td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan={5} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
+                                                    <td colSpan={6} className="px-6 py-10 text-center text-zinc-500 dark:text-white/30 italic">
                                                         Không có nhân viên nào.
                                                     </td>
                                                 </tr>
@@ -3594,7 +4080,192 @@ export default function AdminPage() {
                                     disabled={isCreatingStaff}
                                     className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition text-xs uppercase tracking-wider shadow-lg shadow-red-600/15"
                                 >
-                                    {isCreatingStaff ? 'Đang tạo...' : 'Tạo Staff'}
+                                 </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XEM CHI TIẾT STAFF */}
+            {isStaffDetailOpen && selectedStaff && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-[#121212] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 relative">
+                        <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-6">
+                            <Info size={24} className="text-blue-500" />
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase italic">Chi Tiết Nhân Viên</h3>
+                                <p className="text-[10px] text-white/40">Hồ sơ thông tin tài khoản nhân sự hệ thống</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex flex-col items-center gap-3 bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+                                <img 
+                                    src={selectedStaff.avatar_url || '/assets/img/avata.jpg'} 
+                                    className="w-20 h-20 rounded-full object-cover border-2 border-blue-500/30 shadow-lg shadow-blue-500/10" 
+                                    alt={selectedStaff.name} 
+                                />
+                                <div className="text-center">
+                                    <h4 className="text-base font-bold text-white">{selectedStaff.name}</h4>
+                                    <span className="text-[10px] font-mono text-white/50">{selectedStaff.email}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
+                                    <span className="text-white/40">Mã nhân sự:</span>
+                                    <span className="font-mono font-bold text-white/80">STF-{selectedStaff._id.substring(selectedStaff._id.length - 6).toUpperCase()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
+                                    <span className="text-white/40">Vai trò hệ thống:</span>
+                                    <span className="px-2 py-0.5 border border-orange-500/20 bg-orange-500/10 text-orange-500 rounded font-black text-[9px]">
+                                        {selectedStaff.role}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
+                                    <span className="text-white/40">Trạng thái tài khoản:</span>
+                                    {selectedStaff.isActive ? (
+                                        <span className="inline-flex items-center gap-1 text-emerald-500 font-bold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Đang hoạt động
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-red-500 font-bold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Đã khóa
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-white/40">Ngày tham gia:</span>
+                                    <span className="text-white/80">{new Date(selectedStaff.createdAt).toLocaleDateString('vi-VN', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsStaffDetailOpen(false);
+                                        handleEditStaffClick(selectedStaff);
+                                    }}
+                                    className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition text-xs uppercase tracking-wider shadow-lg shadow-blue-600/15"
+                                >
+                                    Sửa đổi
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsStaffDetailOpen(false)}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition text-xs uppercase tracking-wider"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL SỬA THÔNG TIN & ĐỔI MẬT KHẨU STAFF */}
+            {showEditStaffModal && selectedStaff && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-[#121212] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 relative">
+                        <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-6">
+                            <Edit3 size={24} className="text-amber-500" />
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase italic">Chỉnh Sửa Staff</h3>
+                                <p className="text-[10px] text-white/40">Cập nhật hồ sơ thông tin và bảo mật của nhân viên</p>
+                            </div>
+                        </div>
+
+                        {updateStaffError && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3.5 rounded-2xl mb-4 text-xs font-semibold">
+                                {updateStaffError}
+                            </div>
+                        )}
+
+                        {updateStaffSuccess && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3.5 rounded-2xl mb-4 text-xs font-semibold">
+                                {updateStaffSuccess}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleUpdateStaff} className="space-y-4">
+                            {/* Avatar Section */}
+                            <div className="flex flex-col items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-2xl relative">
+                                <img 
+                                    src={editStaffAvatar || '/assets/img/avata.jpg'} 
+                                    className="w-16 h-16 rounded-full object-cover border border-white/10" 
+                                    alt="Staff Avatar" 
+                                />
+                                <label className="cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/10 text-[10px] font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1">
+                                    {isUploadingFile ? 'Đang tải lên...' : 'Đổi ảnh đại diện'}
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={handleAvatarUpload} 
+                                        className="hidden" 
+                                        disabled={isUploadingFile}
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block">Tên nhân viên *</label>
+                                <input
+                                    type="text"
+                                    value={editStaffName}
+                                    onChange={(e) => setEditStaffName(e.target.value)}
+                                    placeholder="Tên đầy đủ của nhân viên"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-amber-500 transition text-sm font-semibold"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block">Email đăng nhập (Không thể đổi)</label>
+                                <input
+                                    type="email"
+                                    value={selectedStaff.email}
+                                    className="w-full bg-white/[0.01] border border-white/5 rounded-xl py-3 px-4 text-white/40 cursor-not-allowed text-sm font-mono"
+                                    disabled
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-white/50 uppercase tracking-wider block flex items-center gap-1">
+                                    <Key size={10} className="text-amber-500" />
+                                    Mật khẩu mới (Để trống nếu giữ nguyên)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={editStaffPassword}
+                                    onChange={(e) => setEditStaffPassword(e.target.value)}
+                                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-amber-500 transition text-sm"
+                                    minLength={6}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditStaffModal(false)}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition text-xs uppercase tracking-wider"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUpdatingStaff || isUploadingFile}
+                                    className="flex-1 py-3 rounded-xl bg-amber-550 hover:bg-amber-600 text-white font-bold transition text-xs uppercase tracking-wider shadow-lg shadow-amber-550/15"
+                                >
+                                    {isUpdatingStaff ? 'Đang lưu...' : 'Lưu thay đổi'}
                                 </button>
                             </div>
                         </form>

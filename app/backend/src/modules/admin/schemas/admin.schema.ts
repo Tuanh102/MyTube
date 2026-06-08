@@ -28,6 +28,9 @@ export class Admin {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ default: true })
+  isFirstLogin: boolean;
 }
 
 export const AdminSchema = SchemaFactory.createForClass(Admin);
