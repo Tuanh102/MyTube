@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
 import ClockWidget from '@/components/ClockWidget';
+import { useSocket } from '@/context/SocketContext';
 
 function cleanString(str: string): string {
     return str
@@ -112,6 +113,7 @@ function matchTab(query: string, keywordsMap: Record<string, string[]>): string 
 
 export default function StaffPage() {
     const router = useRouter();
+    const socket = useSocket();
     const { theme, setTheme } = useUI();
     const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
     const themeDropdownRef = useRef<HTMLDivElement>(null);
@@ -586,28 +588,38 @@ export default function StaffPage() {
 
     const handleReplyTicket = async () => {
         if (!replyText.trim() || !selectedTicket) return;
-        setIsSubmittingReply(true);
-        try {
-            const res = await fetch(`http://127.0.0.1:5000/api/support/message/${selectedTicket._id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    senderId: staff._id,
-                    role: 'STAFF',
-                    message: replyText
-                })
+        
+        if (socket && socket.connected) {
+            socket.emit('send_support_message', {
+                ticketId: selectedTicket._id,
+                senderId: staff._id,
+                role: 'STAFF',
+                message: replyText
             });
-            if (res.ok) {
-                setReplyText('');
-                const updatedTicket = await res.json();
-                setSelectedTicket(updatedTicket);
-                fetchTickets();
-                // alert('Đã gửi phản hồi thành công!');
+            setReplyText('');
+        } else {
+            setIsSubmittingReply(true);
+            try {
+                const res = await fetch(`http://127.0.0.1:5000/api/support/message/${selectedTicket._id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senderId: staff._id,
+                        role: 'STAFF',
+                        message: replyText
+                    })
+                });
+                if (res.ok) {
+                    setReplyText('');
+                    const updatedTicket = await res.json();
+                    setSelectedTicket(updatedTicket);
+                    fetchTickets();
+                }
+            } catch (error) {
+                alert('Lỗi khi gửi phản hồi');
+            } finally {
+                setIsSubmittingReply(false);
             }
-        } catch (error) {
-            alert('Lỗi khi gửi phản hồi');
-        } finally {
-            setIsSubmittingReply(false);
         }
     };
 
@@ -622,6 +634,74 @@ export default function StaffPage() {
             }
         }
     };
+
+    useEffect(() => {
+        if (!socket || !selectedTicket?._id) return;
+
+        const roomId = `ticket_${selectedTicket._id}`;
+        socket.emit("join_room", { roomId });
+
+        const handleNewSupportMessage = (data: { ticketId: string; message: any }) => {
+            if (data.ticketId === selectedTicket._id) {
+                setSelectedTicket((prev: any) => {
+                    if (!prev) return prev;
+                    const exists = prev.messages.some((m: any) => m._id === data.message._id || (m.message === data.message.message && Math.abs(new Date(m.createdAt).getTime() - new Date(data.message.createdAt).getTime()) < 2000));
+                    if (exists) return prev;
+                    return {
+                        ...prev,
+                        messages: [...prev.messages, data.message]
+                    };
+                });
+
+                setTickets((prevTickets) =>
+                    prevTickets.map((t) => {
+                        if (t._id === data.ticketId) {
+                            const msgExists = t.messages.some((m: any) => m._id === data.message._id || (m.message === data.message.message && Math.abs(new Date(m.createdAt).getTime() - new Date(data.message.createdAt).getTime()) < 2000));
+                            return {
+                                ...t,
+                                messages: msgExists ? t.messages : [...t.messages, data.message],
+                                isReadByStaff: true
+                            };
+                        }
+                        return t;
+                    })
+                );
+            }
+        };
+
+        socket.on("new_support_message", handleNewSupportMessage);
+
+        return () => {
+            socket.off("new_support_message", handleNewSupportMessage);
+        };
+    }, [socket, selectedTicket?._id]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleTicketUpdated = (data: { ticketId: string; status: string; lastMessage: any }) => {
+            setTickets((prevTickets) => {
+                return prevTickets.map(t => {
+                    if (t._id === data.ticketId) {
+                        const msgExists = t.messages.some((m: any) => m._id === data.lastMessage._id || (m.message === data.lastMessage.message && Math.abs(new Date(m.createdAt).getTime() - new Date(data.lastMessage.createdAt).getTime()) < 2000));
+                        return {
+                            ...t,
+                            status: data.status,
+                            messages: msgExists ? t.messages : [...t.messages, data.lastMessage],
+                            isReadByStaff: selectedTicket?._id === data.ticketId ? true : false
+                        };
+                    }
+                    return t;
+                });
+            });
+        };
+
+        socket.on("ticket_updated", handleTicketUpdated);
+
+        return () => {
+            socket.off("ticket_updated", handleTicketUpdated);
+        };
+    }, [socket, selectedTicket?._id]);
 
     const handleLogout = () => {
         sessionStorage.removeItem('staff_token');

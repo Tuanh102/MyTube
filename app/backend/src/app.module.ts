@@ -14,6 +14,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { ReportsModule } from "./modules/reports/reports.module";
 import { LiveModule } from "./modules/live/live.module";
 import { AdsModule } from "./modules/ads/ads.module";
+import { SocketGateway } from "./modules/socket.gateway";
 
 @Module({
   imports: [
@@ -42,5 +43,6 @@ import { AdsModule } from "./modules/ads/ads.module";
     LiveModule,
     AdsModule,
   ],
+  providers: [SocketGateway],
 })
 export class AppModule {}

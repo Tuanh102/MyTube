@@ -6,10 +6,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Radio, Users, DollarSign, MessageSquare, Power, Send, AlertTriangle, ShieldCheck, Star, Pin, Maximize2 } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
+import { useSocket } from '@/context/SocketContext';
 
 export default function LiveHostPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const socket = useSocket();
   const { data: session } = useSession();
   const streamId = searchParams.get('id');
 
@@ -59,17 +61,26 @@ export default function LiveHostPage() {
 
     // 2. Gửi tin nhắn chat đặc biệt để đồng bộ cho các Viewer
     if (!streamId || !session?.user?.id) return;
-    try {
-      await fetch(`/api/live/${streamId}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: session.user.id,
-          content: `🔊 [SOUND_EFFECT]: ${filename}`,
-        }),
+    const soundContent = `🔊 [SOUND_EFFECT]: ${filename}`;
+    if (socket && socket.connected) {
+      socket.emit('send_live_message', {
+        streamId,
+        senderId: session.user.id,
+        content: soundContent
       });
-    } catch (err) {
-      console.error('Lỗi khi gửi hiệu ứng âm thanh:', err);
+    } else {
+      try {
+        await fetch(`/api/live/${streamId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderId: session.user.id,
+            content: soundContent,
+          }),
+        });
+      } catch (err) {
+        console.error('Lỗi khi gửi hiệu ứng âm thanh:', err);
+      }
     }
   };
 
@@ -204,7 +215,7 @@ export default function LiveHostPage() {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [hostBalance, setHostBalance] = useState<number>(0);
 
-  // 2. Fetch thông tin phiên stream & chat messages
+  // 2. Fetch thông tin phiên stream & metadata polling
   useEffect(() => {
     if (!streamId) return;
 
@@ -230,22 +241,72 @@ export default function LiveHostPage() {
             setHostBalance((userData.balance || 0) * 1000);
           }
         }
+      } catch (err) {
+        console.error('Lỗi khi fetch thông tin stream:', err);
+      }
+    };
 
+    const fetchInitialMessages = async () => {
+      try {
         const messagesRes = await fetch(`/api/live/${streamId}/messages`);
         if (messagesRes.ok) {
           const msgData = await messagesRes.json();
           setMessages(msgData);
         }
       } catch (err) {
-        console.error('Lỗi khi fetch thông tin stream:', err);
+        console.error('Lỗi khi fetch tin nhắn ban đầu:', err);
       }
     };
 
     fetchStreamData();
-    const interval = setInterval(fetchStreamData, 2000);
+    fetchInitialMessages();
+    const interval = setInterval(fetchStreamData, 3000);
 
     return () => clearInterval(interval);
   }, [streamId, router, session?.user?.id]);
+
+  // 3. Thiết lập lắng nghe sự kiện Socket.io cho Host
+  useEffect(() => {
+    if (!socket || !streamId) return;
+
+    const roomId = `live_${streamId}`;
+    socket.emit('join_room', { roomId });
+
+    const handleNewLiveMessage = (message: any) => {
+      setMessages((prev) => {
+        const exists = prev.some((m) => m._id === message._id || (m.content === message.content && m.senderId === message.senderId && Math.abs(new Date(m.createdAt || m.created_at || Date.now()).getTime() - new Date(message.createdAt || message.created_at || Date.now()).getTime()) < 2000));
+        if (exists) return prev;
+        return [...prev, message];
+      });
+    };
+
+    const handleNewLiveDonation = (donation: any) => {
+      // Cập nhật số dư và doanh thu Host thời gian thực
+      if (donation.streamerBalance !== undefined) {
+        setHostBalance(donation.streamerBalance * 1000);
+      }
+      if (donation.amount !== undefined) {
+        setStream((prev: any) => prev ? { ...prev, earnings: (prev.earnings || 0) + donation.amount } : null);
+      }
+
+      // Thêm tin nhắn donate vào messages list nếu có
+      if (donation.donateMessage) {
+        setMessages((prev) => {
+          const exists = prev.some((m) => m._id === donation.donateMessage._id || (m.content === donation.donateMessage.content && m.senderId === donation.donateMessage.senderId));
+          if (exists) return prev;
+          return [...prev, donation.donateMessage];
+        });
+      }
+    };
+
+    socket.on('new_live_message', handleNewLiveMessage);
+    socket.on('new_live_donation', handleNewLiveDonation);
+
+    return () => {
+      socket.off('new_live_message', handleNewLiveMessage);
+      socket.off('new_live_donation', handleNewLiveDonation);
+    };
+  }, [socket, streamId]);
 
   // Đồng hồ đếm giờ Live thực tế
   useEffect(() => {
@@ -316,23 +377,32 @@ export default function LiveHostPage() {
     e.preventDefault();
     if (!streamId || !inputText.trim() || !session?.user?.id) return;
 
-    try {
-      const res = await fetch(`/api/live/${streamId}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: session.user.id,
-          content: inputText.trim(),
-        }),
+    if (socket && socket.connected) {
+      socket.emit('send_live_message', {
+        streamId,
+        senderId: session.user.id,
+        content: inputText.trim()
       });
+      setInputText('');
+    } else {
+      try {
+        const res = await fetch(`/api/live/${streamId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderId: session.user.id,
+            content: inputText.trim(),
+          }),
+        });
 
-      if (res.ok) {
-        const newMsg = await res.json();
-        setMessages((prev) => [...prev, newMsg]);
-        setInputText('');
+        if (res.ok) {
+          const newMsg = await res.json();
+          setMessages((prev) => [...prev, newMsg]);
+          setInputText('');
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
     }
   };
 

@@ -11,6 +11,7 @@ import UploadVideoModal from '../components/modals/UploadVideoModal';
 import EditVideoModal from '../components/modals/EditVideoModal';
 import EditChannelModal from '../components/modals/EditChannelModal';
 import { formatDuration, getUploadUrl } from '@/lib/utils';
+import { useSocket } from '@/context/SocketContext';
 
 const VIETNAMESE_BANKS = [
   { code: 'MB', name: 'MB Bank (Ngân hàng Quân đội)' },
@@ -27,6 +28,7 @@ const VIETNAMESE_BANKS = [
 
 export default function StudioPage() {
   const { data: session, status } = useSession();
+  const socket = useSocket();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [channels, setChannels] = useState<any[]>([]);
@@ -195,6 +197,46 @@ export default function StudioPage() {
     }
   };
 
+  useEffect(() => {
+    if (!socket || !selectedTicket?._id) return;
+
+    const roomId = `ticket_${selectedTicket._id}`;
+    socket.emit("join_room", { roomId });
+
+    const handleNewSupportMessage = (data: { ticketId: string; message: any }) => {
+      if (data.ticketId === selectedTicket._id) {
+        setSelectedTicket((prev: any) => {
+          if (!prev) return prev;
+          const exists = prev.messages.some((m: any) => m._id === data.message._id || (m.message === data.message.message && Math.abs(new Date(m.createdAt).getTime() - new Date(data.message.createdAt).getTime()) < 2000));
+          if (exists) return prev;
+          return {
+            ...prev,
+            messages: [...prev.messages, data.message],
+          };
+        });
+
+        setTickets((prevTickets) =>
+          prevTickets.map((t) => {
+            if (t._id === data.ticketId) {
+              const msgExists = t.messages.some((m: any) => m._id === data.message._id || (m.message === data.message.message && Math.abs(new Date(m.createdAt).getTime() - new Date(data.message.createdAt).getTime()) < 2000));
+              return {
+                ...t,
+                messages: msgExists ? t.messages : [...t.messages, data.message],
+              };
+            }
+            return t;
+          })
+        );
+      }
+    };
+
+    socket.on("new_support_message", handleNewSupportMessage);
+
+    return () => {
+      socket.off("new_support_message", handleNewSupportMessage);
+    };
+  }, [socket, selectedTicket?._id]);
+
   const fetchData = async (showFullLoading = false) => {
     if (showFullLoading) setLoading(true);
     
@@ -328,27 +370,38 @@ export default function StudioPage() {
 
   const handleSendTicketMessage = async (ticketId: string) => {
     if (!ticketReplyText.trim() || !session?.user?.id) return;
-    setIsSendingMessage(true);
-    try {
-      const res = await fetch(`/api/support/message/${ticketId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: session.user.id,
-          role: 'USER',
-          message: ticketReplyText
-        })
+    
+    if (socket && socket.connected) {
+      socket.emit('send_support_message', {
+        ticketId,
+        senderId: session.user.id,
+        role: 'USER',
+        message: ticketReplyText
       });
-      if (res.ok) {
-        setTicketReplyText('');
-        const updatedTicket = await res.json();
-        setSelectedTicket(updatedTicket);
-        fetchTickets();
+      setTicketReplyText('');
+    } else {
+      setIsSendingMessage(true);
+      try {
+        const res = await fetch(`/api/support/message/${ticketId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderId: session.user.id,
+            role: 'USER',
+            message: ticketReplyText
+          })
+        });
+        if (res.ok) {
+          setTicketReplyText('');
+          const updatedTicket = await res.json();
+          setSelectedTicket(updatedTicket);
+          fetchTickets();
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSendingMessage(false);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSendingMessage(false);
     }
   };
 

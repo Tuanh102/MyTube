@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Radio, Users, DollarSign, MessageSquare, Send, AlertTriangle, Star, Gift, X, Sparkles, ShieldAlert, Pin, Flag } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
 import { toggleFollow } from '@/lib/actions';
+import { useSocket } from '@/context/SocketContext';
 
 // Định nghĩa cấu trúc hạt xu vàng cho hoạt ảnh Canvas
 class Coin {
@@ -43,6 +44,7 @@ class Coin {
 export default function LiveViewerPage() {
   const { id: streamId } = useParams();
   const router = useRouter();
+  const socket = useSocket();
   const { data: session, update } = useSession();
   const user = session?.user as any;
 
@@ -302,7 +304,7 @@ export default function LiveViewerPage() {
     };
   }, [stream?.isActive, streamId, viewerId]);
 
-  // 1. Fetch live stream details and messages polling
+  // 1. Fetch live stream details polling
   useEffect(() => {
     if (!streamId) return;
 
@@ -315,22 +317,67 @@ export default function LiveViewerPage() {
         } else if (streamRes.status === 404) {
           setStream((prev: any) => prev ? { ...prev, isActive: false } : { isActive: false });
         }
+      } catch (err) {
+        console.error('Lỗi khi fetch thông tin stream:', err);
+      }
+    };
 
+    const fetchInitialMessages = async () => {
+      try {
         const messagesRes = await fetch(`/api/live/${streamId}/messages`);
         if (messagesRes.ok) {
           const msgData = await messagesRes.json();
           setMessages(msgData);
         }
       } catch (err) {
-        console.error('Lỗi khi fetch thông tin stream:', err);
+        console.error('Lỗi khi fetch tin nhắn ban đầu:', err);
       }
     };
 
     fetchStreamData();
-    const interval = setInterval(fetchStreamData, 2000);
+    fetchInitialMessages();
+    const interval = setInterval(fetchStreamData, 3000);
 
     return () => clearInterval(interval);
   }, [streamId]);
+
+  // 2. Thiết lập lắng nghe sự kiện Socket.io cho phòng livestream
+  useEffect(() => {
+    if (!socket || !streamId) return;
+
+    const roomId = `live_${streamId}`;
+    socket.emit('join_room', { roomId });
+
+    const handleNewLiveMessage = (message: any) => {
+      setMessages((prev) => {
+        const exists = prev.some((m) => m._id === message._id || (m.content === message.content && m.senderId === message.senderId && Math.abs(new Date(m.createdAt || m.created_at || Date.now()).getTime() - new Date(message.createdAt || message.created_at || Date.now()).getTime()) < 2000));
+        if (exists) return prev;
+        return [...prev, message];
+      });
+    };
+
+    const handleNewLiveDonation = (donation: any) => {
+      setDonationAlert({ senderName: donation.senderName || 'Người xem', amount: donation.amount });
+      triggerCoinRain(donation.amount);
+      setTimeout(() => setDonationAlert(null), 5000);
+      
+      if (donation.donateMessage) {
+        setMessages((prev) => {
+          const exists = prev.some((m) => m._id === donation.donateMessage._id || (m.content === donation.donateMessage.content && m.senderId === donation.donateMessage.senderId));
+          if (exists) return prev;
+          return [...prev, donation.donateMessage];
+        });
+      }
+    };
+
+    socket.on('new_live_message', handleNewLiveMessage);
+    socket.on('new_live_donation', handleNewLiveDonation);
+
+    return () => {
+      socket.off('new_live_message', handleNewLiveMessage);
+      socket.off('new_live_donation', handleNewLiveDonation);
+    };
+  }, [socket, streamId]);
 
   // Cuộn chat xuống dưới cùng (chỉ cuộn khung chat, tránh giật màn hình toàn trang)
   useEffect(() => {
@@ -432,23 +479,32 @@ export default function LiveViewerPage() {
       return;
     }
 
-    try {
-      const res = await fetch(`/api/live/${streamId}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: user.id,
-          content: inputText.trim(),
-        }),
+    if (socket && socket.connected) {
+      socket.emit('send_live_message', {
+        streamId,
+        senderId: user.id,
+        content: inputText.trim()
       });
+      setInputText('');
+    } else {
+      try {
+        const res = await fetch(`/api/live/${streamId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderId: user.id,
+            content: inputText.trim(),
+          }),
+        });
 
-      if (res.ok) {
-        const newMsg = await res.json();
-        setMessages((prev) => [...prev, newMsg]);
-        setInputText('');
+        if (res.ok) {
+          const newMsg = await res.json();
+          setMessages((prev) => [...prev, newMsg]);
+          setInputText('');
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -500,16 +556,26 @@ export default function LiveViewerPage() {
         },
       });
 
-      // Hiển thị thông báo trên màn hình
-      setDonationAlert({ senderName: user.name || user.username || 'Khán giả', amount: finalAmount });
-      setTimeout(() => setDonationAlert(null), 5000);
+      // Phát tán sự kiện qua Socket.io để toàn bộ phòng xem được hiệu ứng
+      if (socket && socket.connected) {
+        socket.emit('broadcast_live_donation', {
+          streamId,
+          senderName: user.name || user.username || 'Khán giả',
+          amount: finalAmount,
+          donateMessage: data.donateMessage
+        });
+      } else {
+        // Hiển thị thông báo trên màn hình cục bộ nếu không có socket
+        setDonationAlert({ senderName: user.name || user.username || 'Khán giả', amount: finalAmount });
+        setTimeout(() => setDonationAlert(null), 5000);
 
-      // Kích hoạt mưa xu vàng lộng lẫy
-      triggerCoinRain(finalAmount);
+        // Kích hoạt mưa xu vàng lộng lẫy
+        triggerCoinRain(finalAmount);
 
-      // Thêm ngay tin nhắn donate vào danh sách cục bộ
-      if (data.donateMessage) {
-        setMessages((prev) => [...prev, data.donateMessage]);
+        // Thêm ngay tin nhắn donate vào danh sách cục bộ
+        if (data.donateMessage) {
+          setMessages((prev) => [...prev, data.donateMessage]);
+        }
       }
     } catch (err: any) {
       console.error(err);
